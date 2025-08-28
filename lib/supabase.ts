@@ -3,7 +3,22 @@ import { createClient } from "@supabase/supabase-js"
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    storage: {
+      getItem: (key: string) => {
+        return sessionStorage.getItem(key)
+      },
+      setItem: (key: string, value: string) => {
+        sessionStorage.setItem(key, value)
+      },
+      removeItem: (key: string) => {
+        sessionStorage.removeItem(key)
+      }
+    },
+    persistSession: true // Keep session during browser session
+  }
+})
 
 export type Database = {
   public: {
