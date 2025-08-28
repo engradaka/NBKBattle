@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { supabase } from "@/lib/supabase"
@@ -379,13 +379,13 @@ export default function DashboardPage() {
                 Add Category
               </Button>
             </DialogTrigger>
-            <DialogContent aria-describedby="category-form-description">
+            <DialogContent>
               <DialogHeader>
                 <DialogTitle>{editingCategory ? "Edit Category" : "Add New Category"}</DialogTitle>
+                <DialogDescription>
+                  {editingCategory ? "Edit the category details below" : "Create a new quiz category with name, description and image"}
+                </DialogDescription>
               </DialogHeader>
-              <div id="category-form-description" className="sr-only">
-                Form to {editingCategory ? "edit existing" : "create new"} quiz category with name and image
-              </div>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="name_ar">Arabic Name</Label>
@@ -469,6 +469,7 @@ export default function DashboardPage() {
                       width={120}
                       height={120}
                       className="rounded-lg object-cover w-full h-full"
+                      priority
                     />
                   ) : (
                     <ImageIcon className="w-12 h-12 text-gray-400" />

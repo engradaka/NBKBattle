@@ -177,6 +177,7 @@ export default function CategorySelectionPage() {
               width={100}
               height={100}
               className="w-full h-48 object-cover rounded-lg mx-auto"
+              priority
             />
           ) : (
             <span className="text-4xl mb-3">{category.icon}</span>
