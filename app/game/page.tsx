@@ -271,6 +271,11 @@ export default function GamePage() {
           newState[`team${team}PowerUps`] = [...teamPowerUps, { ...powerUp }]
           newState.lastPowerUpGranted = newState.answeredQuestions.length // Update cooldown
           
+          // Play power-up sound
+          const audio = new Audio('/sounds/powerup.mp3')
+          audio.volume = 0.6
+          audio.play().catch(e => console.log('Audio play failed:', e))
+          
           // Show animation
           setShowPowerUpAnimation({ powerUp, team })
           
