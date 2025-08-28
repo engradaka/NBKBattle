@@ -288,7 +288,7 @@ export default function CategoryQuestionsPage() {
                       value={formData.question_type}
                       onValueChange={(value: 'text' | 'video' | 'image' | 'audio') => setFormData({ ...formData, question_type: value })}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger id="question_type">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -409,7 +409,7 @@ export default function CategoryQuestionsPage() {
                       value={formData.points.toString()}
                       onValueChange={(value: string) => setFormData({ ...formData, points: Number.parseInt(value) })}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger id="points">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>

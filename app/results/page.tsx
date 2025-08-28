@@ -46,20 +46,30 @@ export default function ResultsPage() {
     <div className="flex min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 relative overflow-hidden">
       {/* Floating Confetti */}
       <div className="absolute inset-0 pointer-events-none">
-        {[...Array(20)].map((_, i) => (
-          <div
-            key={i}
-            className="absolute animate-bounce text-2xl"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-              animationDelay: `${Math.random() * 2}s`,
-              animationDuration: `${2 + Math.random() * 2}s`
-            }}
-          >
-            {['🎉', '🎊', '⭐', '🏆', '🎈', '✨'][Math.floor(Math.random() * 6)]}
-          </div>
-        ))}
+        {[...Array(20)].map((_, i) => {
+          // Use index-based positioning to avoid hydration mismatch
+          const left = (i * 17 + 23) % 100
+          const top = (i * 13 + 31) % 100
+          const delay = (i * 0.3) % 2
+          const duration = 2 + (i % 3)
+          const emojiIndex = i % 6
+          const emojis = ['🎉', '🎊', '⭐', '🏆', '🎈', '✨']
+          
+          return (
+            <div
+              key={i}
+              className="absolute animate-bounce text-2xl"
+              style={{
+                left: `${left}%`,
+                top: `${top}%`,
+                animationDelay: `${delay}s`,
+                animationDuration: `${duration}s`
+              }}
+            >
+              {emojis[emojiIndex]}
+            </div>
+          )
+        })}
       </div>
       
       <SidebarProvider>
