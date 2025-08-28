@@ -537,7 +537,7 @@ export default function GamePage() {
             <div className="text-center mb-4">
               <div className="inline-flex items-center px-4 py-2 bg-blue-100 rounded-lg">
                 <span className="text-lg font-bold text-blue-800">
-                  Next Question: {gameState[`team${nextQuestionTurn}Name`]}'s Turn
+                  {language === 'ar' ? 'السؤال التالي: دور فريق' : 'Next Question:'} {gameState[`team${nextQuestionTurn}Name`]}{language === 'ar' ? '' : "'s Turn"}
                 </span>
               </div>
             </div>
@@ -546,12 +546,14 @@ export default function GamePage() {
             <div className="flex justify-between items-start mb-6 sm:mb-8">
               {/* Team 1 */}
               <div className="text-center">
-                <h2 className={`text-lg sm:text-xl font-bold ${nextQuestionTurn === 1 ? 'text-blue-600' : 'text-gray-900'}`}>
-                  {gameState.team1Name}
-                </h2>
-                <Badge variant="outline" className="text-lg sm:text-xl mt-2 px-3 py-1">
-                  {gameState.team1Score} pts
-                </Badge>
+                <div className={`p-3 rounded-lg border-2 ${nextQuestionTurn === 1 ? 'bg-blue-50 border-blue-300' : 'bg-gray-50 border-gray-300'}`}>
+                  <h2 className={`text-lg sm:text-xl font-bold ${nextQuestionTurn === 1 ? 'text-blue-600' : 'text-gray-900'}`}>
+                    {gameState.team1Name}
+                  </h2>
+                  <Badge variant="outline" className="text-lg sm:text-xl mt-2 px-3 py-1">
+                    {gameState.team1Score} pts
+                  </Badge>
+                </div>
                 {/* Team 1 Power-ups */}
                 <div className="flex flex-wrap gap-1 mt-2 justify-center">
                   {gameState.team1PowerUps.map((powerUp) => (
@@ -570,24 +572,18 @@ export default function GamePage() {
                 </div>
               </div>
 
-              {/* Back Button */}
-              <Button
-                onClick={handleBack}
-                variant="outline"
-                className="px-4 sm:px-6 py-2 bg-blue-800 text-white border-blue-800 hover:bg-blue-700 rounded-lg"
-              >
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                {t("back_to_categories")}
-              </Button>
+
 
               {/* Team 2 */}
               <div className="text-center">
-                <h2 className={`text-lg sm:text-xl font-bold ${nextQuestionTurn === 2 ? 'text-blue-600' : 'text-gray-900'}`}>
-                  {gameState.team2Name}
-                </h2>
-                <Badge variant="outline" className="text-lg sm:text-xl mt-2 px-3 py-1">
-                  {gameState.team2Score} pts
-                </Badge>
+                <div className={`p-3 rounded-lg border-2 ${nextQuestionTurn === 2 ? 'bg-blue-50 border-blue-300' : 'bg-gray-50 border-gray-300'}`}>
+                  <h2 className={`text-lg sm:text-xl font-bold ${nextQuestionTurn === 2 ? 'text-blue-600' : 'text-gray-900'}`}>
+                    {gameState.team2Name}
+                  </h2>
+                  <Badge variant="outline" className="text-lg sm:text-xl mt-2 px-3 py-1">
+                    {gameState.team2Score} pts
+                  </Badge>
+                </div>
                 {/* Team 2 Power-ups */}
                 <div className="flex flex-wrap gap-1 mt-2 justify-center">
                   {gameState.team2PowerUps.map((powerUp) => (
@@ -665,8 +661,16 @@ export default function GamePage() {
               ))}
             </div>
 
-            {/* Finish Game Button */}
-            <div className="text-center">
+            {/* Game Control Buttons */}
+            <div className="flex justify-center gap-4">
+              <Button
+                onClick={handleBack}
+                variant="outline"
+                className="px-4 sm:px-6 py-2 bg-gray-600 text-white border-gray-600 hover:bg-gray-700 rounded-lg"
+              >
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                {t("back_to_categories")}
+              </Button>
               <Button
                 onClick={handleFinishGame}
                 className="px-6 sm:px-8 py-3 bg-blue-800 hover:bg-blue-700 text-white rounded-lg font-semibold"
@@ -746,8 +750,8 @@ export default function GamePage() {
                         <div className="absolute -top-4 -left-4 z-10">
                           <div 
                             className={`relative w-16 h-16 cursor-pointer ${timeLeft <= 10 ? 'animate-pulse' : ''}`}
-                            onClick={() => setTimerActive(false)}
-                            title="Click to stop timer"
+                            onClick={() => setTimerActive(!timerActive)}
+                            title={timerActive ? "Click to pause timer" : "Click to resume timer"}
                           >
                             <svg className="w-16 h-16 transform -rotate-90" viewBox="0 0 64 64">
                               {/* Background circle */}
