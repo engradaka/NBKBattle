@@ -50,6 +50,7 @@ interface Stats {
 
 export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null)
+  const [loading, setLoading] = useState(true)
   const [categories, setCategories] = useState<Category[]>([])
   const [stats, setStats] = useState<Stats>({
     totalCategories: 0,
@@ -71,17 +72,47 @@ export default function DashboardPage() {
 
   useEffect(() => {
     checkUser()
-    fetchCategoriesWithStats()
-  }, [])
+    
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT' || !session) {
+        setUser(null)
+        router.push('/login')
+      } else if (session?.user) {
+        setUser(session.user)
+        setLoading(false)
+      }
+    })
+
+    return () => subscription.unsubscribe()
+  }, [router])
+
+  useEffect(() => {
+    if (user) {
+      fetchCategoriesWithStats()
+    }
+  }, [user])
 
   const checkUser = async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) {
+    try {
+      const { data: { session }, error } = await supabase.auth.getSession()
+      
+      if (error) {
+        console.error('Auth error:', error)
+        router.push("/login")
+        return
+      }
+      
+      if (!session?.user) {
+        router.push("/login")
+      } else {
+        setUser(session.user)
+      }
+    } catch (error) {
+      console.error('Auth check failed:', error)
       router.push("/login")
-    } else {
-      setUser(user)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -242,8 +273,12 @@ export default function DashboardPage() {
     return language === "ar" ? category.name_ar : category.name_en
   }
 
-  if (!user) {
+  if (loading) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>
+  }
+
+  if (!user) {
+    return <div className="min-h-screen flex items-center justify-center">Redirecting to login...</div>
   }
 
   return (

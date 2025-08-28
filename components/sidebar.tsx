@@ -1,24 +1,53 @@
 // components/sidebar.tsx
 "use client";
 
-import { useState } from "react";
-import { Globe, LogIn, Menu } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Globe, LogIn, Menu, Settings, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/lib/language-context";
 import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase";
+import type { User } from "@supabase/supabase-js";
 import clsx from "clsx";
 
 export default function Sidebar() {
   const { language, setLanguage, t } = useLanguage();
   const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
 
   const toggleLanguage = () => {
     setLanguage(language === "ar" ? "en" : "ar");
   };
 
+  useEffect(() => {
+    // Check initial auth state
+    checkUser();
+    
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const checkUser = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    setUser(session?.user ?? null);
+  };
+
   const handleLogin = () => {
     router.push("/login");
+  };
+
+  const handleDashboard = () => {
+    router.push("/dashboard");
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push("/");
   };
 
   const toggleSidebar = () => {
@@ -46,16 +75,39 @@ export default function Sidebar() {
         )}
       >
 
-        {/* Login Button */}
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleLogin}
-          className="w-12 h-12 p-0 hover:bg-gray-100"
-          title={t("login") ?? "Login"}
-        >
-          <LogIn className="h-5 w-5 text-gray-600" />
-        </Button>
+        {/* Auth Button - Login or Dashboard */}
+        {user ? (
+          <>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleDashboard}
+              className="w-12 h-12 p-0 hover:bg-gray-100"
+              title="Admin Dashboard"
+            >
+              <Settings className="h-5 w-5 text-gray-600" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleLogout}
+              className="w-12 h-12 p-0 hover:bg-gray-100"
+              title="Logout"
+            >
+              <LogOut className="h-5 w-5 text-gray-600" />
+            </Button>
+          </>
+        ) : (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleLogin}
+            className="w-12 h-12 p-0 hover:bg-gray-100"
+            title={t("login") ?? "Login"}
+          >
+            <LogIn className="h-5 w-5 text-gray-600" />
+          </Button>
+        )}
 
         {/* Language Toggle */}
         <Button
