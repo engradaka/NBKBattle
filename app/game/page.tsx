@@ -55,30 +55,49 @@ function shuffle<T>(array: T[]): T[] {
   return arr
 }
 
-// Get 2 questions per category/point value: unused first (shuffled), then oldest used
+// Get 2 questions per category/point value: unused first, then used
 function getQuestionsForCategoryPoint(
   categoryId: string,
   points: number,
   allQuestions: Question[],
-  lastUsedIds: string[]
+  usedQuestionIds: string[]
 ): Question[] {
   const questions = allQuestions.filter(
     q => q.category_id === categoryId && q.points === points
   )
-  const unused = questions.filter(q => !lastUsedIds.includes(q.id))
-  // Used questions sorted by order in lastUsedIds (oldest first)
-  const used = lastUsedIds
-    .map(id => questions.find(q => q.id === id))
-    .filter((q): q is Question => !!q) // Type guard for TypeScript
-  const shuffledUnused = shuffle(unused)
-  let finalQuestions = [...shuffledUnused]
-  if (finalQuestions.length < 2) {
-    finalQuestions = [
-      ...finalQuestions,
-      ...used.slice(0, 2 - finalQuestions.length)
-    ]
+  
+  // Separate unused and used questions
+  const unusedQuestions = questions.filter(q => !usedQuestionIds.includes(q.id))
+  const usedQuestions = questions.filter(q => usedQuestionIds.includes(q.id))
+  
+  // Shuffle unused questions for variety
+  const shuffledUnused = shuffle(unusedQuestions)
+  
+  // Sort used questions by when they were used (oldest first)
+  const sortedUsed = usedQuestions.sort((a, b) => {
+    const aIndex = usedQuestionIds.indexOf(a.id)
+    const bIndex = usedQuestionIds.indexOf(b.id)
+    return aIndex - bIndex
+  })
+  
+  // Take up to 2 questions: unused first, then used
+  const selectedQuestions = []
+  
+  // Add unused questions first
+  selectedQuestions.push(...shuffledUnused.slice(0, 2))
+  
+  // If we need more questions, add used ones
+  if (selectedQuestions.length < 2) {
+    const needed = 2 - selectedQuestions.length
+    selectedQuestions.push(...sortedUsed.slice(0, needed))
   }
-  return finalQuestions.slice(0, 2)
+  
+  // If still not enough, duplicate existing questions
+  while (selectedQuestions.length < 2 && questions.length > 0) {
+    selectedQuestions.push(questions[0])
+  }
+  
+  return selectedQuestions.slice(0, 2)
 }
 
 export default function GamePage() {
@@ -103,41 +122,15 @@ export default function GamePage() {
     initializeGame()
   }, [])
 
-  // Load progress from Supabase for a category + points
-  const getProgressForCategoryPoint = async (categoryId: string, points: number): Promise<ProgressRecord> => {
-    const { data, error } = await supabase
-      .from("category_point_progress")
-      .select("last_used_question_ids")
-      .eq("category_id", categoryId)
-      .eq("points", points)
-      .single()
-
-    if (error || !data) {
-      // Initialize if not exists
-      await supabase.from("category_point_progress").upsert({
-        category_id: categoryId,
-        points,
-        last_used_question_ids: [],
-      })
-      return { last_used_question_ids: [] }
-    }
-    return data
+  // Load used questions from localStorage (persistent across games)
+  const getUsedQuestions = (): string[] => {
+    const used = localStorage.getItem('usedQuestionIds')
+    return used ? JSON.parse(used) : []
   }
 
-  // Update progress after a question is answered
-  const updateProgressForCategoryPoint = async (categoryId: string, points: number, questionId: string) => {
-    const { last_used_question_ids: usedIds } = await getProgressForCategoryPoint(categoryId, points)
-    if (!usedIds.includes(questionId)) {
-      const newUsedIds = [...usedIds, questionId]
-      await supabase
-        .from("category_point_progress")
-        .update({
-          last_used_question_ids: newUsedIds,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("category_id", categoryId)
-        .eq("points", points)
-    }
+  // Save used questions to localStorage
+  const saveUsedQuestions = (usedIds: string[]) => {
+    localStorage.setItem('usedQuestionIds', JSON.stringify(usedIds))
   }
 
   const initializeGame = async () => {
@@ -182,13 +175,15 @@ export default function GamePage() {
     const sortedQuestions = (questionsData || []).sort((a, b) => a.id.localeCompare(b.id))
     setQuestions(sortedQuestions)
 
-    // Pre-load rotated questions map using the new logic
+    // Get used questions from localStorage
+    const usedQuestionIds = getUsedQuestions()
+    
+    // Pre-load questions map with unused/used logic
     const map: Record<string, Question[]> = {}
     for (const category of categoriesData || []) {
       for (const points of [200, 400, 600]) {
         const key = `${category.id}-${points}`
-        const { last_used_question_ids: usedIds } = await getProgressForCategoryPoint(category.id, points)
-        map[key] = getQuestionsForCategoryPoint(category.id, points, sortedQuestions, usedIds)
+        map[key] = getQuestionsForCategoryPoint(category.id, points, sortedQuestions, usedQuestionIds)
       }
     }
     setRotatedQuestionsMap(map)
@@ -219,8 +214,12 @@ export default function GamePage() {
       answeredQuestions: [...prev.answeredQuestions, selectedQuestion.id],
     }))
 
-    // Update Supabase progress
-    updateProgressForCategoryPoint(selectedQuestion.category_id, selectedQuestion.points, selectedQuestion.id)
+    // Mark question as used and save to localStorage
+    const usedQuestionIds = getUsedQuestions()
+    if (!usedQuestionIds.includes(selectedQuestion.id)) {
+      const newUsedIds = [...usedQuestionIds, selectedQuestion.id]
+      saveUsedQuestions(newUsedIds)
+    }
 
     // Close dialog
     setSelectedQuestion(null)
