@@ -118,7 +118,7 @@ export default function CategoryQuestionsPage() {
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
       const filePath = `question-media/${fileName}`
 
-      const { error: uploadError } = await supabase.storage.from("images").upload(filePath, selectedMedia)
+      const { error: uploadError } = await supabase.storage.from("media").upload(filePath, selectedMedia)
 
       if (uploadError) {
         console.error("Error uploading media:", uploadError)
@@ -126,7 +126,7 @@ export default function CategoryQuestionsPage() {
         return
       }
 
-      const { data: { publicUrl } } = supabase.storage.from("images").getPublicUrl(filePath)
+      const { data: { publicUrl } } = supabase.storage.from("media").getPublicUrl(filePath)
       mediaUrl = publicUrl
     }
 
@@ -265,13 +265,13 @@ export default function CategoryQuestionsPage() {
               </DialogTrigger>
               <DialogContent
                 className="max-w-4xl max-h-[90vh] overflow-y-auto"
-                aria-describedby="question-dialog-description"
+                aria-describedby="question-form-description"
               >
                 <DialogHeader>
                   <DialogTitle>{editingQuestion ? "Edit Question" : "Add New Question"}</DialogTitle>
                 </DialogHeader>
-                <div id="question-dialog-description" className="sr-only">
-                  {editingQuestion ? "Edit question form" : "Add new question form"}
+                <div id="question-form-description" className="sr-only">
+                  Form to {editingQuestion ? "edit existing" : "create new"} quiz question with text, image, video, or audio content
                 </div>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="space-y-2">

@@ -162,7 +162,7 @@ export default function DashboardPage() {
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
       const filePath = `category-images/${fileName}`
 
-      const { error: uploadError } = await supabase.storage.from("images").upload(filePath, selectedImage)
+      const { error: uploadError } = await supabase.storage.from("media").upload(filePath, selectedImage)
 
       if (uploadError) {
         console.error("Error uploading image:", uploadError)
@@ -170,7 +170,7 @@ export default function DashboardPage() {
         return
       }
 
-      const { data: { publicUrl } } = supabase.storage.from("images").getPublicUrl(filePath)
+      const { data: { publicUrl } } = supabase.storage.from("media").getPublicUrl(filePath)
       imageUrl = publicUrl
     }
 
@@ -338,12 +338,12 @@ export default function DashboardPage() {
                 Add Category
               </Button>
             </DialogTrigger>
-            <DialogContent aria-describedby="category-dialog-description">
+            <DialogContent aria-describedby="category-form-description">
               <DialogHeader>
                 <DialogTitle>{editingCategory ? "Edit Category" : "Add New Category"}</DialogTitle>
               </DialogHeader>
-              <div id="category-dialog-description" className="sr-only">
-                {editingCategory ? "Edit category form" : "Add new category form"}
+              <div id="category-form-description" className="sr-only">
+                Form to {editingCategory ? "edit existing" : "create new"} quiz category with name and image
               </div>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
