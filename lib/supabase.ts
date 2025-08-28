@@ -7,16 +7,23 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     storage: {
       getItem: (key: string) => {
-        return sessionStorage.getItem(key)
+        if (typeof window !== 'undefined') {
+          return sessionStorage.getItem(key)
+        }
+        return null
       },
       setItem: (key: string, value: string) => {
-        sessionStorage.setItem(key, value)
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem(key, value)
+        }
       },
       removeItem: (key: string) => {
-        sessionStorage.removeItem(key)
+        if (typeof window !== 'undefined') {
+          sessionStorage.removeItem(key)
+        }
       }
     },
-    persistSession: true // Keep session during browser session
+    persistSession: true
   }
 })
 
@@ -28,6 +35,8 @@ export type Database = {
           id: string
           name_ar: string
           name_en: string
+          description_ar: string | null
+          description_en: string | null
           image_url: string | null
           created_at: string
         }
@@ -35,6 +44,8 @@ export type Database = {
           id?: string
           name_ar: string
           name_en: string
+          description_ar?: string | null
+          description_en?: string | null
           image_url?: string | null
           created_at?: string
         }
@@ -42,6 +53,8 @@ export type Database = {
           id?: string
           name_ar?: string
           name_en?: string
+          description_ar?: string | null
+          description_en?: string | null
           image_url?: string | null
           created_at?: string
         }

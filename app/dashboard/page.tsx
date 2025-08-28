@@ -62,6 +62,8 @@ export default function DashboardPage() {
   const [formData, setFormData] = useState({
     name_ar: "",
     name_en: "",
+    description_ar: "",
+    description_en: "",
     image_url: "",
   })
   const router = useRouter()
@@ -208,6 +210,8 @@ export default function DashboardPage() {
     const categoryData = {
       name_ar: formData.name_ar,
       name_en: formData.name_en,
+      description_ar: formData.description_ar,
+      description_en: formData.description_en,
       image_url: imageUrl,
     }
 
@@ -231,7 +235,7 @@ export default function DashboardPage() {
 
     setIsDialogOpen(false)
     setEditingCategory(null)
-    setFormData({ name_ar: "", name_en: "", image_url: "" })
+    setFormData({ name_ar: "", name_en: "", description_ar: "", description_en: "", image_url: "" })
     setSelectedImage(null)
     setImagePreview("")
     fetchCategoriesWithStats()
@@ -242,6 +246,8 @@ export default function DashboardPage() {
     setFormData({
       name_ar: category.name_ar,
       name_en: category.name_en,
+      description_ar: category.description_ar || "",
+      description_en: category.description_en || "",
       image_url: category.image_url || "",
     })
     setSelectedImage(null)
@@ -264,7 +270,7 @@ export default function DashboardPage() {
   const handleDialogClose = () => {
     setIsDialogOpen(false)
     setEditingCategory(null)
-    setFormData({ name_ar: "", name_en: "", image_url: "" })
+    setFormData({ name_ar: "", name_en: "", description_ar: "", description_en: "", image_url: "" })
     setSelectedImage(null)
     setImagePreview("")
   }
@@ -401,6 +407,24 @@ export default function DashboardPage() {
                     required
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="description_ar">Arabic Description</Label>
+                  <Input
+                    id="description_ar"
+                    value={formData.description_ar}
+                    onChange={(e) => setFormData({ ...formData, description_ar: e.target.value })}
+                    placeholder="Enter Arabic description"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="description_en">English Description</Label>
+                  <Input
+                    id="description_en"
+                    value={formData.description_en}
+                    onChange={(e) => setFormData({ ...formData, description_en: e.target.value })}
+                    placeholder="Enter English description"
+                  />
+                </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="category_image">Category Image</Label>
@@ -456,9 +480,9 @@ export default function DashboardPage() {
                   <div className="flex-1">
                     <CardTitle className="text-lg font-bold text-gray-900 mb-1">{getCategoryName(category)}</CardTitle>
                     <p className="text-sm text-gray-600">
-                      {language === "ar"
-                        ? "فئة مليئة بالأسئلة المثيرة والمعلومات المفيدة"
-                        : "Category full of exciting questions and useful information"}
+                      {language === "ar" 
+                        ? (category.description_ar || "فئة مليئة بالأسئلة المثيرة والمعلومات المفيدة")
+                        : (category.description_en || "Category full of exciting questions and useful information")}
                     </p>
                   </div>
                   <div className="text-right">

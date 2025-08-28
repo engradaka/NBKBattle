@@ -188,7 +188,9 @@ export default function CategorySelectionPage() {
       </CardHeader>
       <CardContent className="pt-0">
         <p className="text-xs sm:text-sm text-gray-600 text-center">
-          {language === "ar" ? category.description_ar : category.description_en}
+          {language === "ar" 
+            ? (category.description_ar || "وصف هذه الفئة")
+            : (category.description_en || "Category description")}
         </p>
       </CardContent>
     </Card>
