@@ -229,6 +229,17 @@ export default function CategoryQuestionsPage() {
     return language === "ar" ? question.answer_ar : question.answer_en
   }
 
+  // Helper function to detect if text contains Arabic characters
+  const isArabicText = (text: string) => {
+    const arabicRegex = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/
+    return arabicRegex.test(text)
+  }
+
+  // Get text direction based on content
+  const getTextDirection = (text: string) => {
+    return isArabicText(text) ? 'rtl' : 'ltr'
+  }
+
   const totalPoints = questions.reduce((sum, q) => sum + q.points, 0)
 
   if (!category) {
@@ -469,7 +480,13 @@ export default function CategoryQuestionsPage() {
 
                 <div className="space-y-2">
                   <div>
-                    <h3 className="font-medium text-gray-900">{getQuestionText(question)}</h3>
+                    <h3 
+                      className="font-medium text-gray-900"
+                      dir={getTextDirection(getQuestionText(question))}
+                      style={{ textAlign: getTextDirection(getQuestionText(question)) === 'rtl' ? 'right' : 'left' }}
+                    >
+                      {getQuestionText(question)}
+                    </h3>
                   </div>
                   {question.media_url && question.question_type === 'image' && (
                     <div className="w-24 h-24">
@@ -487,7 +504,10 @@ export default function CategoryQuestionsPage() {
                       Media attached • {question.media_duration || 5}s duration
                     </div>
                   )}
-                  <div>
+                  <div 
+                    dir={getTextDirection(getAnswerText(question))}
+                    style={{ textAlign: getTextDirection(getAnswerText(question)) === 'rtl' ? 'right' : 'left' }}
+                  >
                     <span className="text-sm text-green-600 font-medium">Answer: </span>
                     <span className="text-sm text-green-700">{getAnswerText(question)}</span>
                   </div>

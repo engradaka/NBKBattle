@@ -528,6 +528,17 @@ export default function GamePage() {
     return language === "ar" ? question.answer_ar : question.answer_en
   }
 
+  // Helper function to detect if text contains Arabic characters
+  const isArabicText = (text: string) => {
+    const arabicRegex = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/
+    return arabicRegex.test(text)
+  }
+
+  // Get text direction based on content
+  const getTextDirection = (text: string) => {
+    return isArabicText(text) ? 'rtl' : 'ltr'
+  }
+
   return (
     <div className="flex min-h-screen bg-white">
       <SidebarProvider>
@@ -807,8 +818,9 @@ export default function GamePage() {
                     {/* Question */}
                     <div className="text-center p-6 bg-muted rounded-lg">
                       <p
-                        className="text-lg sm:text-xl font-medium break-words whitespace-normal text-right leading-relaxed mb-4"
-                        dir={language === "ar" ? "rtl" : "ltr"}
+                        className="text-lg sm:text-xl font-medium break-words whitespace-normal leading-relaxed mb-4"
+                        dir={getTextDirection(getQuestionText(selectedQuestion))}
+                        style={{ textAlign: getTextDirection(getQuestionText(selectedQuestion)) === 'rtl' ? 'right' : 'left' }}
                       >
                         {getQuestionText(selectedQuestion)}
                       </p>
@@ -862,12 +874,13 @@ export default function GamePage() {
                     {showAnswer && (
                       <div className="text-center p-6 bg-green-50 dark:bg-green-950 rounded-lg border-2 border-green-200 dark:border-green-800">
                         <p
-                          className="text-lg sm:text-xl font-bold text-green-800 dark:text-green-200 break-words whitespace-normal text-right leading-relaxed"
-                          dir={language === "ar" ? "rtl" : "ltr"}
+                          className="text-lg sm:text-xl font-bold text-green-800 dark:text-green-200 break-words whitespace-normal leading-relaxed"
+                          dir={getTextDirection(getAnswerText(selectedQuestion))}
+                          style={{ textAlign: getTextDirection(getAnswerText(selectedQuestion)) === 'rtl' ? 'right' : 'left' }}
                         >
                           {getAnswerText(selectedQuestion)}
                           {activePowerUp?.id === 'double' && (
-                            <span className="ml-2 text-red-600">🔥 (Double Points!)</span>
+                            <span className={`${getTextDirection(getAnswerText(selectedQuestion)) === 'rtl' ? 'mr-2' : 'ml-2'} text-red-600`}>🔥 (Double Points!)</span>
                           )}
                         </p>
                       </div>
