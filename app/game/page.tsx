@@ -53,6 +53,7 @@ interface GameState {
   team2ConsecutiveWrong: number
   team1ConsecutiveRight: number
   team2ConsecutiveRight: number
+  lastPowerUpGranted: number // Question number when last power-up was granted
 }
 
 interface ProgressRecord {
@@ -129,6 +130,7 @@ export default function GamePage() {
     team2ConsecutiveWrong: 0,
     team1ConsecutiveRight: 0,
     team2ConsecutiveRight: 0,
+    lastPowerUpGranted: 0,
   })
   const [categories, setCategories] = useState<Category[]>([])
   const [questions, setQuestions] = useState<Question[]>([])
@@ -205,44 +207,52 @@ export default function GamePage() {
     blockQuestion: createPowerUp('block', 'Block Question', 'Click any question to eliminate it', '🚫')
   }
 
-  // Check and grant power-ups based on game state
+  // Check and grant power-ups - GUARANTEED AT SPECIFIC QUESTIONS
   const checkPowerUpTriggers = () => {
     const scoreDiff = Math.abs(gameState.team1Score - gameState.team2Score)
     const losingTeam = gameState.team1Score < gameState.team2Score ? 1 : 2
     const totalQuestions = gameState.answeredQuestions.length
     
-    // Don't grant power-ups too early or if team already has 3
-    if (totalQuestions < 5) return
-    if (gameState.team1PowerUps.length >= 3 && gameState.team2PowerUps.length >= 3) return
+    // GUARANTEED POWER-UPS AT SPECIFIC QUESTION NUMBERS
     
-    // Score-based triggers (only for significant gaps)
-    if (scoreDiff >= 1000 && gameState[`team${losingTeam}PowerUps`].length < 3) {
-      grantPowerUp(losingTeam, [availablePowerUps.questionSwap])
-    } else if (scoreDiff >= 600 && gameState[`team${losingTeam}PowerUps`].length < 3) {
-      grantPowerUp(losingTeam, [availablePowerUps.doublePoints])
-    }
-    
-    // Performance triggers (more strict)
-    if (gameState.team1ConsecutiveWrong >= 4 && gameState.team1PowerUps.length < 3) {
-      grantPowerUp(1, [availablePowerUps.questionSwap])
-    }
-    if (gameState.team2ConsecutiveWrong >= 4 && gameState.team2PowerUps.length < 3) {
-      grantPowerUp(2, [availablePowerUps.questionSwap])
-    }
-    
-    if (gameState.team1ConsecutiveRight >= 4 && gameState.team1PowerUps.length < 3) {
-      grantPowerUp(1, [availablePowerUps.stealTurn])
-    }
-    if (gameState.team2ConsecutiveRight >= 4 && gameState.team2PowerUps.length < 3) {
-      grantPowerUp(2, [availablePowerUps.stealTurn])
-    }
-    
-    // Progress triggers (mid-game only)
-    if (totalQuestions === Math.floor(categories.length * 3) && totalQuestions > 8) {
+    // 10th question - First power-up
+    if (totalQuestions === 10 && gameState.lastPowerUpGranted < 10) {
       const teamWithFewerPowerUps = gameState.team1PowerUps.length <= gameState.team2PowerUps.length ? 1 : 2
-      if (gameState[`team${teamWithFewerPowerUps}PowerUps`].length < 3) {
+      grantPowerUp(teamWithFewerPowerUps, [availablePowerUps.questionSwap])
+      return
+    }
+    
+    // 20th question - Second power-up
+    if (totalQuestions === 20 && gameState.lastPowerUpGranted < 20) {
+      if (scoreDiff >= 600) {
+        // Give to losing team if there's a gap
+        grantPowerUp(losingTeam, [availablePowerUps.doublePoints])
+      } else {
+        // Give to team with fewer power-ups if close game
+        const teamWithFewerPowerUps = gameState.team1PowerUps.length <= gameState.team2PowerUps.length ? 1 : 2
+        grantPowerUp(teamWithFewerPowerUps, [availablePowerUps.doublePoints])
+      }
+      return
+    }
+    
+    // 25th question - Third power-up
+    if (totalQuestions === 25 && gameState.lastPowerUpGranted < 25) {
+      const teamWithFewerPowerUps = gameState.team1PowerUps.length <= gameState.team2PowerUps.length ? 1 : 2
+      grantPowerUp(teamWithFewerPowerUps, [availablePowerUps.stealTurn])
+      return
+    }
+    
+    // 30th question - Fourth power-up
+    if (totalQuestions === 30 && gameState.lastPowerUpGranted < 30) {
+      if (scoreDiff >= 800) {
+        // Give to losing team if big gap
+        grantPowerUp(losingTeam, [availablePowerUps.blockQuestion])
+      } else {
+        // Give to team with fewer power-ups
+        const teamWithFewerPowerUps = gameState.team1PowerUps.length <= gameState.team2PowerUps.length ? 1 : 2
         grantPowerUp(teamWithFewerPowerUps, [availablePowerUps.blockQuestion])
       }
+      return
     }
   }
 
@@ -259,6 +269,7 @@ export default function GamePage() {
         
         if (teamPowerUps.length < 3 && !existsOnTeam1 && !existsOnTeam2) {
           newState[`team${team}PowerUps`] = [...teamPowerUps, { ...powerUp }]
+          newState.lastPowerUpGranted = newState.answeredQuestions.length // Update cooldown
           
           // Show animation
           setShowPowerUpAnimation({ powerUp, team })
@@ -517,11 +528,22 @@ export default function GamePage() {
       <SidebarProvider>
         <main className="flex-1 p-4 sm:p-8 md:ml-16">
           <div className="max-w-7xl mx-auto">
+            {/* Turn Indicator */}
+            <div className="text-center mb-4">
+              <div className="inline-flex items-center px-4 py-2 bg-blue-100 rounded-lg">
+                <span className="text-lg font-bold text-blue-800">
+                  Next Question: {gameState[`team${nextQuestionTurn}Name`]}'s Turn
+                </span>
+              </div>
+            </div>
+
             {/* Game Header */}
             <div className="flex justify-between items-start mb-6 sm:mb-8">
               {/* Team 1 */}
               <div className="text-center">
-                <h2 className="text-lg sm:text-xl font-bold text-gray-900">{gameState.team1Name}</h2>
+                <h2 className={`text-lg sm:text-xl font-bold ${nextQuestionTurn === 1 ? 'text-blue-600' : 'text-gray-900'}`}>
+                  {gameState.team1Name}
+                </h2>
                 <Badge variant="outline" className="text-lg sm:text-xl mt-2 px-3 py-1">
                   {gameState.team1Score} pts
                 </Badge>
@@ -555,7 +577,9 @@ export default function GamePage() {
 
               {/* Team 2 */}
               <div className="text-center">
-                <h2 className="text-lg sm:text-xl font-bold text-gray-900">{gameState.team2Name}</h2>
+                <h2 className={`text-lg sm:text-xl font-bold ${nextQuestionTurn === 2 ? 'text-blue-600' : 'text-gray-900'}`}>
+                  {gameState.team2Name}
+                </h2>
                 <Badge variant="outline" className="text-lg sm:text-xl mt-2 px-3 py-1">
                   {gameState.team2Score} pts
                 </Badge>
