@@ -156,8 +156,23 @@ export default function DashboardPage() {
 
     let imageUrl = formData.image_url
 
-    // Use image URL from form input
-    imageUrl = formData.image_url
+    // Upload image if selected
+    if (selectedImage) {
+      const fileExt = selectedImage.name.split(".").pop()
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
+      const filePath = `category-images/${fileName}`
+
+      const { error: uploadError } = await supabase.storage.from("images").upload(filePath, selectedImage)
+
+      if (uploadError) {
+        console.error("Error uploading image:", uploadError)
+        alert(`Error uploading image: ${uploadError.message}`)
+        return
+      }
+
+      const { data: { publicUrl } } = supabase.storage.from("images").getPublicUrl(filePath)
+      imageUrl = publicUrl
+    }
 
     const categoryData = {
       name_ar: formData.name_ar,
@@ -353,13 +368,12 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="image_url">Category Image URL</Label>
+                  <Label htmlFor="category_image">Category Image</Label>
                   <Input
-                    id="image_url"
-                    type="url"
-                    value={formData.image_url}
-                    onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                    placeholder="https://example.com/image.jpg"
+                    id="category_image"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
                   />
                 </div>
                 <div className="flex justify-end space-x-2">
