@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { SidebarProvider } from "@/components/ui/sidebar"
 import { supabase } from "@/lib/supabase"
 import { useLanguage } from "@/lib/language-context"
@@ -737,10 +737,10 @@ export default function GamePage() {
                   <DialogTitle className="text-center text-xl sm:text-2xl">
                     {selectedQuestion && `${selectedQuestion.points} ${t("points")}`}
                   </DialogTitle>
+                  <DialogDescription className="sr-only">
+                    Question and answer dialog for the quiz game
+                  </DialogDescription>
                 </DialogHeader>
-                <div id="question-dialog-description" className="sr-only">
-                  Question and answer dialog for the quiz game
-                </div>
                 {selectedQuestion && (
                   <div className="space-y-6 p-4">
                     {/* Circular Timer and Turn Indicator */}

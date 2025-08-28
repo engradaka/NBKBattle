@@ -7,7 +7,7 @@ import { useRouter, useParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -263,16 +263,13 @@ export default function CategoryQuestionsPage() {
                   Add Question
                 </Button>
               </DialogTrigger>
-              <DialogContent
-                className="max-w-4xl max-h-[90vh] overflow-y-auto"
-                aria-describedby="question-form-description"
-              >
+              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>{editingQuestion ? "Edit Question" : "Add New Question"}</DialogTitle>
+                  <DialogDescription>
+                    {editingQuestion ? "Edit the question details below" : "Create a new quiz question with text, image, video, or audio content"}
+                  </DialogDescription>
                 </DialogHeader>
-                <div id="question-form-description" className="sr-only">
-                  Form to {editingQuestion ? "edit existing" : "create new"} quiz question with text, image, video, or audio content
-                </div>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="question_type">Question Type</Label>
