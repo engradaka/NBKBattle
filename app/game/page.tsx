@@ -9,6 +9,7 @@ import { SidebarProvider } from "@/components/ui/sidebar"
 import { supabase } from "@/lib/supabase"
 import { useLanguage } from "@/lib/language-context"
 import { ArrowLeft, Trophy } from "lucide-react"
+import Image from "next/image"
 
 interface Category {
   id: string
@@ -25,6 +26,9 @@ interface Question {
   answer_ar: string
   answer_en: string
   points: number
+  question_type?: 'text' | 'video' | 'image' | 'audio'
+  media_url?: string
+  media_duration?: number
 }
 
 interface GameState {
@@ -359,11 +363,53 @@ export default function GamePage() {
                     {/* Question */}
                     <div className="text-center p-6 bg-muted rounded-lg">
                       <p
-                        className="text-lg sm:text-xl font-medium break-words whitespace-normal text-right leading-relaxed"
+                        className="text-lg sm:text-xl font-medium break-words whitespace-normal text-right leading-relaxed mb-4"
                         dir={language === "ar" ? "rtl" : "ltr"}
                       >
                         {getQuestionText(selectedQuestion)}
                       </p>
+                      
+                      {/* Media Content */}
+                      {selectedQuestion.media_url && (
+                        <div className="mt-4">
+                          {selectedQuestion.question_type === 'image' && (
+                            <div className="flex justify-center">
+                              <Image
+                                src={selectedQuestion.media_url}
+                                alt="Question image"
+                                width={400}
+                                height={300}
+                                className="rounded-lg object-cover max-w-full h-auto"
+                              />
+                            </div>
+                          )}
+                          
+                          {selectedQuestion.question_type === 'video' && (
+                            <div className="flex justify-center">
+                              <video
+                                src={selectedQuestion.media_url}
+                                controls
+                                className="rounded-lg max-w-full h-auto"
+                                style={{ maxHeight: '300px' }}
+                              >
+                                Your browser does not support the video tag.
+                              </video>
+                            </div>
+                          )}
+                          
+                          {selectedQuestion.question_type === 'audio' && (
+                            <div className="flex justify-center">
+                              <audio
+                                src={selectedQuestion.media_url}
+                                controls
+                                className="w-full max-w-md"
+                              >
+                                Your browser does not support the audio tag.
+                              </audio>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     {/* Answer */}
