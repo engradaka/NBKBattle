@@ -27,15 +27,20 @@ export default function LoginPage() {
     setLoading(true)
     setError("")
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
 
-    if (error) {
-      setError(error.message)
-    } else {
-      router.push("/dashboard")
+      if (error) {
+        setError(error.message)
+      } else {
+        router.push("/dashboard")
+      }
+    } catch (err) {
+      console.error('Login error:', err)
+      setError('Network error. Please check your connection and try again.')
     }
 
     setLoading(false)

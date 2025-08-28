@@ -156,23 +156,8 @@ export default function DashboardPage() {
 
     let imageUrl = formData.image_url
 
-    // Upload image if selected
-    if (selectedImage) {
-      const fileExt = selectedImage.name.split(".").pop()
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
-      const filePath = `category-images/${fileName}`
-
-      const { error: uploadError } = await supabase.storage.from("media").upload(filePath, selectedImage)
-
-      if (uploadError) {
-        console.error("Error uploading image:", uploadError)
-        alert(`Error uploading image: ${uploadError.message}`)
-        return
-      }
-
-      const { data: { publicUrl } } = supabase.storage.from("media").getPublicUrl(filePath)
-      imageUrl = publicUrl
-    }
+    // Use image URL from form input
+    imageUrl = formData.image_url
 
     const categoryData = {
       name_ar: formData.name_ar,
@@ -368,24 +353,14 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="category_image">Category Image</Label>
+                  <Label htmlFor="image_url">Category Image URL</Label>
                   <Input
-                    id="category_image"
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageChange}
+                    id="image_url"
+                    type="url"
+                    value={formData.image_url}
+                    onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                    placeholder="https://example.com/image.jpg"
                   />
-                  {imagePreview && (
-                    <div className="w-32 h-32 mx-auto">
-                      <Image
-                        src={imagePreview}
-                        alt="Preview"
-                        width={128}
-                        height={128}
-                        className="rounded-lg object-cover w-full h-full"
-                      />
-                    </div>
-                  )}
                 </div>
                 <div className="flex justify-end space-x-2">
                   <Button type="button" variant="outline" onClick={handleDialogClose}>

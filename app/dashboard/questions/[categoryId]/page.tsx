@@ -112,23 +112,8 @@ export default function CategoryQuestionsPage() {
 
     let mediaUrl = formData.media_url
 
-    // Upload media if selected
-    if (selectedMedia && formData.question_type !== 'text') {
-      const fileExt = selectedMedia.name.split(".").pop()
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
-      const filePath = `question-media/${fileName}`
-
-      const { error: uploadError } = await supabase.storage.from("media").upload(filePath, selectedMedia)
-
-      if (uploadError) {
-        console.error("Error uploading media:", uploadError)
-        alert(`Error uploading media: ${uploadError.message}`)
-        return
-      }
-
-      const { data: { publicUrl } } = supabase.storage.from("media").getPublicUrl(filePath)
-      mediaUrl = publicUrl
-    }
+    // Use media URL from form input
+    mediaUrl = formData.media_url
 
     const questionData = {
       ...formData,
@@ -314,32 +299,22 @@ export default function CategoryQuestionsPage() {
 
                   {formData.question_type !== 'text' && (
                     <div className="space-y-2">
-                      <Label htmlFor="media_file">
-                        {formData.question_type === 'video' && 'Video File'}
-                        {formData.question_type === 'image' && 'Image File'}
-                        {formData.question_type === 'audio' && 'Audio File'}
+                      <Label htmlFor="media_url">
+                        {formData.question_type === 'video' && 'Video URL'}
+                        {formData.question_type === 'image' && 'Image URL'}
+                        {formData.question_type === 'audio' && 'Audio URL'}
                       </Label>
                       <Input
-                        id="media_file"
-                        type="file"
-                        accept={
-                          formData.question_type === 'video' ? 'video/*' :
-                          formData.question_type === 'image' ? 'image/*' :
-                          'audio/*'
+                        id="media_url"
+                        type="url"
+                        value={formData.media_url}
+                        onChange={(e) => setFormData({ ...formData, media_url: e.target.value })}
+                        placeholder={
+                          formData.question_type === 'video' ? 'https://example.com/video.mp4' :
+                          formData.question_type === 'image' ? 'https://example.com/image.jpg' :
+                          'https://example.com/audio.mp3'
                         }
-                        onChange={handleMediaChange}
                       />
-                      {mediaPreview && formData.question_type === 'image' && (
-                        <div className="w-32 h-32 mx-auto">
-                          <Image
-                            src={mediaPreview}
-                            alt="Preview"
-                            width={128}
-                            height={128}
-                            className="rounded-lg object-cover w-full h-full"
-                          />
-                        </div>
-                      )}
                       {(formData.question_type === 'video' || formData.question_type === 'audio') && (
                         <div className="space-y-2">
                           <Label htmlFor="media_duration">Duration (seconds)</Label>
