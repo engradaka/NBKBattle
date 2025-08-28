@@ -12,13 +12,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="flex">
-        {/* Wrap client components in a separate client component */}
+      <body>
         <ClientWrapper>
-          <aside className="w-20 h-screen sticky top-0 flex-shrink-0">
-            <Sidebar />
-          </aside>
-          <main className="flex-1 p-6">{children}</main>
+          {children}
         </ClientWrapper>
       </body>
     </html>
