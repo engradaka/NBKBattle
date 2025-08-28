@@ -31,6 +31,14 @@ interface Question {
   media_duration?: number
 }
 
+interface PowerUp {
+  id: string
+  name: string
+  description: string
+  icon: string
+  used: boolean
+}
+
 interface GameState {
   team1Name: string
   team2Name: string
@@ -39,6 +47,12 @@ interface GameState {
   team1Categories: string[]
   team2Categories: string[]
   answeredQuestions: string[]
+  team1PowerUps: PowerUp[]
+  team2PowerUps: PowerUp[]
+  team1ConsecutiveWrong: number
+  team2ConsecutiveWrong: number
+  team1ConsecutiveRight: number
+  team2ConsecutiveRight: number
 }
 
 interface ProgressRecord {
@@ -109,6 +123,12 @@ export default function GamePage() {
     team1Categories: [],
     team2Categories: [],
     answeredQuestions: [],
+    team1PowerUps: [],
+    team2PowerUps: [],
+    team1ConsecutiveWrong: 0,
+    team2ConsecutiveWrong: 0,
+    team1ConsecutiveRight: 0,
+    team2ConsecutiveRight: 0,
   })
   const [categories, setCategories] = useState<Category[]>([])
   const [questions, setQuestions] = useState<Question[]>([])
@@ -116,8 +136,13 @@ export default function GamePage() {
   const [showAnswer, setShowAnswer] = useState(false)
   const [rotatedQuestionsMap, setRotatedQuestionsMap] = useState<Record<string, Question[]>>({})
   const [currentTurn, setCurrentTurn] = useState<1 | 2 | 'finished'>(1)
+  const [nextQuestionTurn, setNextQuestionTurn] = useState<1 | 2>(1)
   const [timeLeft, setTimeLeft] = useState(30)
   const [timerActive, setTimerActive] = useState(false)
+  const [activePowerUp, setActivePowerUp] = useState<PowerUp | null>(null)
+  const [powerUpTeam, setPowerUpTeam] = useState<1 | 2 | null>(null)
+  const [powerUpMode, setPowerUpMode] = useState<string | null>(null)
+  const [showPowerUpAnimation, setShowPowerUpAnimation] = useState<{powerUp: PowerUp, team: 1 | 2} | null>(null)
   const router = useRouter()
   const { language, t } = useLanguage()
 
@@ -133,6 +158,7 @@ export default function GamePage() {
             if (currentTurn === 1) {
               // Switch to team 2
               setCurrentTurn(2)
+              setTimeLeft(30)
               return 30
             } else {
               // Both teams failed, show answer
@@ -165,6 +191,106 @@ export default function GamePage() {
   // Save used questions to localStorage
   const saveUsedQuestions = (usedIds: string[]) => {
     localStorage.setItem('usedQuestionIds', JSON.stringify(usedIds))
+  }
+
+  // Power-up definitions
+  const createPowerUp = (id: string, name: string, description: string, icon: string): PowerUp => ({
+    id, name, description, icon, used: false
+  })
+
+  const availablePowerUps = {
+    doublePoints: createPowerUp('double', 'Double Points', '2x points for this question', '🔥'),
+    questionSwap: createPowerUp('swap', 'Question Swap', 'Replace with different same-point question', '🔄'),
+    stealTurn: createPowerUp('steal', 'Steal Turn', 'Answer opponent question', '🎯'),
+    blockQuestion: createPowerUp('block', 'Block Question', 'Click any question to eliminate it', '🚫')
+  }
+
+  // Check and grant power-ups based on game state
+  const checkPowerUpTriggers = () => {
+    const scoreDiff = Math.abs(gameState.team1Score - gameState.team2Score)
+    const losingTeam = gameState.team1Score < gameState.team2Score ? 1 : 2
+    const totalQuestions = gameState.answeredQuestions.length
+    
+    // Don't grant power-ups too early or if team already has 3
+    if (totalQuestions < 5) return
+    if (gameState.team1PowerUps.length >= 3 && gameState.team2PowerUps.length >= 3) return
+    
+    // Score-based triggers (only for significant gaps)
+    if (scoreDiff >= 1000 && gameState[`team${losingTeam}PowerUps`].length < 3) {
+      grantPowerUp(losingTeam, [availablePowerUps.questionSwap])
+    } else if (scoreDiff >= 600 && gameState[`team${losingTeam}PowerUps`].length < 3) {
+      grantPowerUp(losingTeam, [availablePowerUps.doublePoints])
+    }
+    
+    // Performance triggers (more strict)
+    if (gameState.team1ConsecutiveWrong >= 4 && gameState.team1PowerUps.length < 3) {
+      grantPowerUp(1, [availablePowerUps.questionSwap])
+    }
+    if (gameState.team2ConsecutiveWrong >= 4 && gameState.team2PowerUps.length < 3) {
+      grantPowerUp(2, [availablePowerUps.questionSwap])
+    }
+    
+    if (gameState.team1ConsecutiveRight >= 4 && gameState.team1PowerUps.length < 3) {
+      grantPowerUp(1, [availablePowerUps.stealTurn])
+    }
+    if (gameState.team2ConsecutiveRight >= 4 && gameState.team2PowerUps.length < 3) {
+      grantPowerUp(2, [availablePowerUps.stealTurn])
+    }
+    
+    // Progress triggers (mid-game only)
+    if (totalQuestions === Math.floor(categories.length * 3) && totalQuestions > 8) {
+      const teamWithFewerPowerUps = gameState.team1PowerUps.length <= gameState.team2PowerUps.length ? 1 : 2
+      if (gameState[`team${teamWithFewerPowerUps}PowerUps`].length < 3) {
+        grantPowerUp(teamWithFewerPowerUps, [availablePowerUps.blockQuestion])
+      }
+    }
+  }
+
+  // Grant power-up to team(s) - ensure no duplicates and max 3 per team
+  const grantPowerUp = (team: 1 | 2, powerUps: PowerUp[]) => {
+    setGameState(prev => {
+      const newState = { ...prev }
+      
+      powerUps.forEach(powerUp => {
+        // Check if team already has 3 power-ups or already has this power-up
+        const teamPowerUps = newState[`team${team}PowerUps`]
+        const existsOnTeam1 = newState.team1PowerUps.find(p => p.id === powerUp.id)
+        const existsOnTeam2 = newState.team2PowerUps.find(p => p.id === powerUp.id)
+        
+        if (teamPowerUps.length < 3 && !existsOnTeam1 && !existsOnTeam2) {
+          newState[`team${team}PowerUps`] = [...teamPowerUps, { ...powerUp }]
+          
+          // Show animation
+          setShowPowerUpAnimation({ powerUp, team })
+          
+          // Hide animation after 3 seconds
+          setTimeout(() => {
+            setShowPowerUpAnimation(null)
+          }, 3000)
+        }
+      })
+      
+      return newState
+    })
+  }
+
+  // Use power-up
+  const usePowerUp = (team: 1 | 2, powerUpId: string) => {
+    const powerUp = gameState[`team${team}PowerUps`].find(p => p.id === powerUpId && !p.used)
+    if (!powerUp) return
+
+    // Activate power-up mode
+    setActivePowerUp(powerUp)
+    setPowerUpTeam(team)
+    setPowerUpMode(powerUpId)
+    
+    // Mark as used
+    setGameState(prev => ({
+      ...prev,
+      [`team${team}PowerUps`]: prev[`team${team}PowerUps`].map(p => 
+        p.id === powerUpId ? { ...p, used: true } : p
+      )
+    }))
   }
 
   const initializeGame = async () => {
@@ -225,9 +351,58 @@ export default function GamePage() {
 
   const handleQuestionClick = (question: Question) => {
     if (gameState.answeredQuestions.includes(question.id)) return
+    
+    // Handle power-up modes
+    if (powerUpMode === 'block') {
+      // Block/eliminate the question
+      setGameState(prev => ({
+        ...prev,
+        answeredQuestions: [...prev.answeredQuestions, question.id]
+      }))
+      // Update the rotated questions map to reflect the blocked question
+      const key = `${question.category_id}-${question.points}`
+      setRotatedQuestionsMap(prev => {
+        const updated = { ...prev }
+        if (updated[key]) {
+          updated[key] = updated[key].filter(q => q.id !== question.id)
+        }
+        return updated
+      })
+      setPowerUpMode(null)
+      setActivePowerUp(null)
+      setPowerUpTeam(null)
+      return
+    }
+    
+    if (powerUpMode === 'swap') {
+      // Replace with different question of same points
+      const samePointQuestions = questions.filter(q => 
+        q.points === question.points && 
+        q.id !== question.id &&
+        !gameState.answeredQuestions.includes(q.id)
+      )
+      if (samePointQuestions.length > 0) {
+        const randomQuestion = samePointQuestions[Math.floor(Math.random() * samePointQuestions.length)]
+        // Update the rotated questions map
+        const key = `${question.category_id}-${question.points}`
+        setRotatedQuestionsMap(prev => {
+          const updated = { ...prev }
+          if (updated[key]) {
+            updated[key] = updated[key].map(q => q.id === question.id ? randomQuestion : q)
+          }
+          return updated
+        })
+      }
+      setPowerUpMode(null)
+      setActivePowerUp(null)
+      setPowerUpTeam(null)
+      return
+    }
+    
+    // Normal question selection
     setSelectedQuestion(question)
     setShowAnswer(false)
-    setCurrentTurn(1)
+    setCurrentTurn(nextQuestionTurn)
     setTimeLeft(30)
     setTimerActive(true)
   }
@@ -244,13 +419,52 @@ export default function GamePage() {
     const newTeam1Score = teamNumber === 1 ? gameState.team1Score + selectedQuestion.points : gameState.team1Score
     const newTeam2Score = teamNumber === 2 ? gameState.team2Score + selectedQuestion.points : gameState.team2Score
 
+    // Update consecutive counters
+    const updateConsecutive = (prev: GameState) => {
+      if (teamNumber === 1) {
+        return {
+          ...prev,
+          team1ConsecutiveRight: prev.team1ConsecutiveRight + 1,
+          team1ConsecutiveWrong: 0,
+          team2ConsecutiveWrong: prev.team2ConsecutiveWrong + (teamNumber === 2 ? 0 : 1)
+        }
+      } else if (teamNumber === 2) {
+        return {
+          ...prev,
+          team2ConsecutiveRight: prev.team2ConsecutiveRight + 1,
+          team2ConsecutiveWrong: 0,
+          team1ConsecutiveWrong: prev.team1ConsecutiveWrong + 1
+        }
+      } else {
+        return {
+          ...prev,
+          team1ConsecutiveWrong: prev.team1ConsecutiveWrong + 1,
+          team2ConsecutiveWrong: prev.team2ConsecutiveWrong + 1,
+          team1ConsecutiveRight: 0,
+          team2ConsecutiveRight: 0
+        }
+      }
+    }
+
+    // Apply power-up effects
+    let finalPoints = selectedQuestion.points
+    if (activePowerUp?.id === 'double' && powerUpTeam === teamNumber) {
+      finalPoints *= 2
+    }
+
+    const finalTeam1Score = teamNumber === 1 ? gameState.team1Score + finalPoints : gameState.team1Score
+    const finalTeam2Score = teamNumber === 2 ? gameState.team2Score + finalPoints : gameState.team2Score
+
     // Mark as answered in state
-    setGameState((prev) => ({
-      ...prev,
-      team1Score: newTeam1Score,
-      team2Score: newTeam2Score,
-      answeredQuestions: [...prev.answeredQuestions, selectedQuestion.id],
-    }))
+    setGameState((prev) => {
+      const updated = updateConsecutive(prev)
+      return {
+        ...updated,
+        team1Score: finalTeam1Score,
+        team2Score: finalTeam2Score,
+        answeredQuestions: [...prev.answeredQuestions, selectedQuestion.id],
+      }
+    })
 
     // Mark question as used and save to localStorage
     const usedQuestionIds = getUsedQuestions()
@@ -265,6 +479,15 @@ export default function GamePage() {
     setShowAnswer(false)
     setCurrentTurn(1)
     setTimeLeft(30)
+    setActivePowerUp(null)
+    setPowerUpTeam(null)
+    setPowerUpMode(null)
+    
+    // Switch to next team for next question
+    setNextQuestionTurn(nextQuestionTurn === 1 ? 2 : 1)
+    
+    // Check for new power-ups after answer
+    setTimeout(checkPowerUpTriggers, 500)
   }
 
   const handleBack = () => {
@@ -295,13 +518,32 @@ export default function GamePage() {
         <main className="flex-1 p-4 sm:p-8 md:ml-16">
           <div className="max-w-7xl mx-auto">
             {/* Game Header */}
-            <div className="flex justify-between items-center mb-6 sm:mb-8">
+            <div className="flex justify-between items-start mb-6 sm:mb-8">
+              {/* Team 1 */}
               <div className="text-center">
                 <h2 className="text-lg sm:text-xl font-bold text-gray-900">{gameState.team1Name}</h2>
                 <Badge variant="outline" className="text-lg sm:text-xl mt-2 px-3 py-1">
                   {gameState.team1Score} pts
                 </Badge>
+                {/* Team 1 Power-ups */}
+                <div className="flex flex-wrap gap-1 mt-2 justify-center">
+                  {gameState.team1PowerUps.map((powerUp) => (
+                    <Button
+                      key={powerUp.id}
+                      size="sm"
+                      variant={powerUp.used ? "secondary" : (powerUpMode === powerUp.id ? "destructive" : "default")}
+                      disabled={powerUp.used}
+                      onClick={() => usePowerUp(1, powerUp.id)}
+                      className="text-xs px-2 py-1 h-8"
+                      title={powerUp.description}
+                    >
+                      {powerUp.icon}
+                    </Button>
+                  ))}
+                </div>
               </div>
+
+              {/* Back Button */}
               <Button
                 onClick={handleBack}
                 variant="outline"
@@ -310,11 +552,29 @@ export default function GamePage() {
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 {t("back_to_categories")}
               </Button>
+
+              {/* Team 2 */}
               <div className="text-center">
                 <h2 className="text-lg sm:text-xl font-bold text-gray-900">{gameState.team2Name}</h2>
                 <Badge variant="outline" className="text-lg sm:text-xl mt-2 px-3 py-1">
                   {gameState.team2Score} pts
                 </Badge>
+                {/* Team 2 Power-ups */}
+                <div className="flex flex-wrap gap-1 mt-2 justify-center">
+                  {gameState.team2PowerUps.map((powerUp) => (
+                    <Button
+                      key={powerUp.id}
+                      size="sm"
+                      variant={powerUp.used ? "secondary" : (powerUpMode === powerUp.id ? "destructive" : "default")}
+                      disabled={powerUp.used}
+                      onClick={() => usePowerUp(2, powerUp.id)}
+                      className="text-xs px-2 py-1 h-8"
+                      title={powerUp.description}
+                    >
+                      {powerUp.icon}
+                    </Button>
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -387,6 +647,56 @@ export default function GamePage() {
               </Button>
             </div>
 
+            {/* Power-up Animation */}
+            {showPowerUpAnimation && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+                <div className="animate-bounce">
+                  <div className="bg-yellow-400 rounded-full p-8 shadow-2xl animate-pulse">
+                    <div className="text-8xl animate-spin">
+                      {showPowerUpAnimation.powerUp.icon}
+                    </div>
+                  </div>
+                </div>
+                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                  <div className="bg-white rounded-lg p-4 shadow-xl animate-pulse">
+                    <h3 className="text-2xl font-bold text-center text-yellow-600">
+                      🎉 POWER-UP GRANTED! 🎉
+                    </h3>
+                    <p className="text-lg text-center mt-2">
+                      <strong>{gameState[`team${showPowerUpAnimation.team}Name`]}</strong> got <strong>{showPowerUpAnimation.powerUp.name}</strong>!
+                    </p>
+                  </div>
+                </div>
+                
+                {/* Flying animation to team */}
+                <div 
+                  className={`absolute text-4xl animate-ping ${
+                    showPowerUpAnimation.team === 1 
+                      ? 'top-20 left-20 animate-bounce' 
+                      : 'top-20 right-20 animate-bounce'
+                  }`}
+                  style={{
+                    animation: `flyToTeam${showPowerUpAnimation.team} 2s ease-out 1s forwards`
+                  }}
+                >
+                  {showPowerUpAnimation.powerUp.icon}
+                </div>
+              </div>
+            )}
+            
+            <style jsx>{`
+              @keyframes flyToTeam1 {
+                0% { transform: translate(0, 0) scale(1); }
+                50% { transform: translate(-200px, -100px) scale(0.5); }
+                100% { transform: translate(-400px, -200px) scale(0.2); opacity: 0; }
+              }
+              @keyframes flyToTeam2 {
+                0% { transform: translate(0, 0) scale(1); }
+                50% { transform: translate(200px, -100px) scale(0.5); }
+                100% { transform: translate(400px, -200px) scale(0.2); opacity: 0; }
+              }
+            `}</style>
+
             {/* Question Dialog */}
             <Dialog open={!!selectedQuestion} onOpenChange={() => setSelectedQuestion(null)}>
               <DialogContent className="max-w-2xl" aria-describedby="question-dialog-description">
@@ -405,7 +715,11 @@ export default function GamePage() {
                       <div className="relative">
                         {/* Circular Timer - Top Left */}
                         <div className="absolute -top-4 -left-4 z-10">
-                          <div className={`relative w-16 h-16 ${timeLeft <= 10 ? 'animate-pulse' : ''}`}>
+                          <div 
+                            className={`relative w-16 h-16 cursor-pointer ${timeLeft <= 10 ? 'animate-pulse' : ''}`}
+                            onClick={() => setTimerActive(false)}
+                            title="Click to stop timer"
+                          >
                             <svg className="w-16 h-16 transform -rotate-90" viewBox="0 0 64 64">
                               {/* Background circle */}
                               <circle
@@ -439,13 +753,20 @@ export default function GamePage() {
                           </div>
                         </div>
                         
-                        {/* Turn Indicator */}
+                        {/* Turn Indicator & Active Power-up */}
                         <div className="text-center mb-4">
                           <div className="text-lg font-bold text-blue-600">
                             {currentTurn === 'finished' ? 'Time\'s Up!' : 
                              currentTurn === 1 ? `${gameState.team1Name}'s Turn` : 
                              `${gameState.team2Name}'s Turn`}
                           </div>
+                          {activePowerUp && (
+                            <div className="mt-2 p-2 bg-yellow-100 rounded-lg">
+                              <span className="text-sm font-bold text-yellow-800">
+                                {activePowerUp.icon} {activePowerUp.name} Active!
+                              </span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     )}
@@ -502,6 +823,8 @@ export default function GamePage() {
                       )}
                     </div>
 
+
+
                     {/* Answer */}
                     {showAnswer && (
                       <div className="text-center p-6 bg-green-50 dark:bg-green-950 rounded-lg border-2 border-green-200 dark:border-green-800">
@@ -510,6 +833,9 @@ export default function GamePage() {
                           dir={language === "ar" ? "rtl" : "ltr"}
                         >
                           {getAnswerText(selectedQuestion)}
+                          {activePowerUp?.id === 'double' && (
+                            <span className="ml-2 text-red-600">🔥 (Double Points!)</span>
+                          )}
                         </p>
                       </div>
                     )}
@@ -518,15 +844,13 @@ export default function GamePage() {
                     <div className="space-y-4">
                       {!showAnswer ? (
                         <div className="space-y-2">
-                          {currentTurn !== 'finished' && (
-                            <Button
-                              onClick={handleShowAnswer}
-                              variant="outline"
-                              className="w-full h-12 sm:h-14 text-base sm:text-lg"
-                            >
-                              Skip Timer & Show Answer
-                            </Button>
-                          )}
+                          <Button
+                            onClick={handleShowAnswer}
+                            variant="outline"
+                            className="w-full h-12 sm:h-14 text-base sm:text-lg"
+                          >
+                            Show Answer
+                          </Button>
                           {currentTurn === 'finished' && (
                             <div className="text-center text-red-600 font-bold">
                               Both teams ran out of time!
