@@ -115,8 +115,42 @@ export default function GamePage() {
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(null)
   const [showAnswer, setShowAnswer] = useState(false)
   const [rotatedQuestionsMap, setRotatedQuestionsMap] = useState<Record<string, Question[]>>({})
+  const [currentTurn, setCurrentTurn] = useState<1 | 2 | 'finished'>(1)
+  const [timeLeft, setTimeLeft] = useState(30)
+  const [timerActive, setTimerActive] = useState(false)
   const router = useRouter()
   const { language, t } = useLanguage()
+
+  // Timer effect
+  useEffect(() => {
+    let interval: NodeJS.Timeout
+    
+    if (timerActive && timeLeft > 0) {
+      interval = setInterval(() => {
+        setTimeLeft((prev) => {
+          if (prev <= 1) {
+            // Time's up for current team
+            if (currentTurn === 1) {
+              // Switch to team 2
+              setCurrentTurn(2)
+              return 30
+            } else {
+              // Both teams failed, show answer
+              setCurrentTurn('finished')
+              setTimerActive(false)
+              setShowAnswer(true)
+              return 0
+            }
+          }
+          return prev - 1
+        })
+      }, 1000)
+    }
+
+    return () => {
+      if (interval) clearInterval(interval)
+    }
+  }, [timerActive, timeLeft, currentTurn])
 
   useEffect(() => {
     initializeGame()
@@ -193,10 +227,14 @@ export default function GamePage() {
     if (gameState.answeredQuestions.includes(question.id)) return
     setSelectedQuestion(question)
     setShowAnswer(false)
+    setCurrentTurn(1)
+    setTimeLeft(30)
+    setTimerActive(true)
   }
 
   const handleShowAnswer = () => {
     setShowAnswer(true)
+    setTimerActive(false)
   }
 
   const handleAnswerResult = (teamNumber: number) => {
@@ -221,9 +259,12 @@ export default function GamePage() {
       saveUsedQuestions(newUsedIds)
     }
 
-    // Close dialog
+    // Reset timer and close dialog
+    setTimerActive(false)
     setSelectedQuestion(null)
     setShowAnswer(false)
+    setCurrentTurn(1)
+    setTimeLeft(30)
   }
 
   const handleBack = () => {
@@ -359,6 +400,56 @@ export default function GamePage() {
                 </div>
                 {selectedQuestion && (
                   <div className="space-y-6 p-4">
+                    {/* Circular Timer and Turn Indicator */}
+                    {!showAnswer && (
+                      <div className="relative">
+                        {/* Circular Timer - Top Left */}
+                        <div className="absolute -top-4 -left-4 z-10">
+                          <div className={`relative w-16 h-16 ${timeLeft <= 10 ? 'animate-pulse' : ''}`}>
+                            <svg className="w-16 h-16 transform -rotate-90" viewBox="0 0 64 64">
+                              {/* Background circle */}
+                              <circle
+                                cx="32"
+                                cy="32"
+                                r="28"
+                                fill="none"
+                                stroke="#e5e7eb"
+                                strokeWidth="4"
+                              />
+                              {/* Progress circle */}
+                              <circle
+                                cx="32"
+                                cy="32"
+                                r="28"
+                                fill="none"
+                                stroke={timeLeft <= 10 ? '#ef4444' : '#3b82f6'}
+                                strokeWidth="4"
+                                strokeLinecap="round"
+                                strokeDasharray={`${2 * Math.PI * 28}`}
+                                strokeDashoffset={`${2 * Math.PI * 28 * (1 - timeLeft / 30)}`}
+                                className="transition-all duration-1000"
+                              />
+                            </svg>
+                            {/* Timer text */}
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <span className={`text-sm font-bold ${timeLeft <= 10 ? 'text-red-500' : 'text-blue-600'}`}>
+                                {timeLeft}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {/* Turn Indicator */}
+                        <div className="text-center mb-4">
+                          <div className="text-lg font-bold text-blue-600">
+                            {currentTurn === 'finished' ? 'Time\'s Up!' : 
+                             currentTurn === 1 ? `${gameState.team1Name}'s Turn` : 
+                             `${gameState.team2Name}'s Turn`}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
                     {/* Question */}
                     <div className="text-center p-6 bg-muted rounded-lg">
                       <p
@@ -426,12 +517,22 @@ export default function GamePage() {
                     {/* Action Buttons */}
                     <div className="space-y-4">
                       {!showAnswer ? (
-                        <Button
-                          onClick={handleShowAnswer}
-                          className="w-full h-12 sm:h-14 text-base sm:text-lg bg-blue-800 hover:bg-blue-600"
-                        >
-                          {t("show_answer")}
-                        </Button>
+                        <div className="space-y-2">
+                          {currentTurn !== 'finished' && (
+                            <Button
+                              onClick={handleShowAnswer}
+                              variant="outline"
+                              className="w-full h-12 sm:h-14 text-base sm:text-lg"
+                            >
+                              Skip Timer & Show Answer
+                            </Button>
+                          )}
+                          {currentTurn === 'finished' && (
+                            <div className="text-center text-red-600 font-bold">
+                              Both teams ran out of time!
+                            </div>
+                          )}
+                        </div>
                       ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                           <Button
