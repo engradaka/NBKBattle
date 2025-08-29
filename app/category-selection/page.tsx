@@ -168,21 +168,25 @@ export default function CategorySelectionPage() {
           <Check className="w-3 h-3 sm:w-5 sm:h-5 text-white" />
         </div>
       )}
-      <CardHeader className="pb-3 sm:pb-4">
-        <div className="category-placeholder mb-3 sm:mb-4">
-          {category.image_url ? (
-            <Image
-              src={category.image_url || "/placeholder.svg"}
-              alt={getCategoryName(category)}
-              width={100}
-              height={100}
-              className="w-full h-48 object-cover rounded-lg mx-auto"
-              priority
-            />
-          ) : (
-            <span className="text-4xl mb-3">{category.icon}</span>
-          )}
+      {/* Full-width image */}
+      {category.image_url ? (
+        <div className="w-full h-48 overflow-hidden rounded-t-lg">
+          <Image
+            src={category.image_url || "/placeholder.svg"}
+            alt={getCategoryName(category)}
+            width={300}
+            height={192}
+            className="w-full h-full object-cover"
+            priority
+          />
         </div>
+      ) : (
+        <div className="w-full h-48 flex items-center justify-center bg-gray-100 rounded-t-lg">
+          <span className="text-6xl">{category.icon}</span>
+        </div>
+      )}
+      
+      <CardHeader className="pb-3 sm:pb-4">
         <CardTitle className="text-base sm:text-lg font-semibold text-gray-900 text-center">
           {getCategoryName(category)}
         </CardTitle>

@@ -26,6 +26,7 @@ import {
   Edit,
   Trash2,
   ImageIcon,
+  Search,
 } from "lucide-react"
 import Image from "next/image"
 
@@ -71,6 +72,9 @@ export default function DashboardPage() {
 
   const [selectedImage, setSelectedImage] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string>("")
+  const [searchQuery, setSearchQuery] = useState("")
+  const [searchResults, setSearchResults] = useState<any[]>([])
+  const [showSearchResults, setShowSearchResults] = useState(false)
 
   useEffect(() => {
     checkUser()
@@ -279,6 +283,33 @@ export default function DashboardPage() {
     return language === "ar" ? category.name_ar : category.name_en
   }
 
+  // Search questions across all categories
+  const handleSearch = async (query: string) => {
+    setSearchQuery(query)
+    if (query.length < 2) {
+      setSearchResults([])
+      setShowSearchResults(false)
+      return
+    }
+
+    const { data: questionsData, error } = await supabase
+      .from("questions")
+      .select(`
+        *,
+        categories!inner(
+          name_ar,
+          name_en
+        )
+      `)
+      .or(`question_ar.ilike.%${query}%,question_en.ilike.%${query}%,answer_ar.ilike.%${query}%,answer_en.ilike.%${query}%`)
+      .limit(10)
+
+    if (!error && questionsData) {
+      setSearchResults(questionsData)
+      setShowSearchResults(true)
+    }
+  }
+
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>
   }
@@ -369,10 +400,58 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        {/* Add Category Button */}
-        <div className="flex justify-between items-center mb-6">
+        {/* Search and Add Category */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Categories</h2>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          
+          {/* Global Question Search */}
+          <div className="relative w-full sm:w-96">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Input
+                placeholder="Search questions across all categories..."
+                value={searchQuery}
+                onChange={(e) => handleSearch(e.target.value)}
+                className="pl-10 pr-4"
+              />
+            </div>
+            
+            {/* Search Results Dropdown */}
+            {showSearchResults && searchResults.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto">
+                {searchResults.map((question: any) => (
+                  <div key={question.id} className="p-3 border-b border-gray-100 hover:bg-gray-50">
+                    <div className="flex justify-between items-start mb-2">
+                      <span className="text-xs text-blue-600 font-medium">
+                        {language === 'ar' ? question.categories.name_ar : question.categories.name_en}
+                      </span>
+                      <span className="text-xs text-gray-500">{question.points} pts</span>
+                    </div>
+                    <p className="text-sm font-medium text-gray-900 mb-1">
+                      Q: {language === 'ar' ? question.question_ar : question.question_en}
+                    </p>
+                    <p className="text-xs text-green-600">
+                      A: {language === 'ar' ? question.answer_ar : question.answer_en}
+                    </p>
+                  </div>
+                ))}
+                {searchResults.length === 0 && searchQuery.length >= 2 && (
+                  <div className="p-4 text-center text-gray-500">
+                    No questions found matching "{searchQuery}"
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+        
+        <div className="flex justify-end mb-6">
+          <Dialog open={isDialogOpen} onOpenChange={(open) => {
+            setIsDialogOpen(open)
+            if (!open) {
+              setShowSearchResults(false)
+            }
+          }}>
             <DialogTrigger asChild>
               <Button className="bg-blue-600 hover:bg-blue-700">
                 <Plus className="h-4 w-4 mr-2" />
