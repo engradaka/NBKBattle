@@ -743,7 +743,7 @@ export default function GamePage() {
 
             {/* Question Dialog */}
             <Dialog open={!!selectedQuestion} onOpenChange={() => setSelectedQuestion(null)}>
-              <DialogContent className="max-w-2xl" aria-describedby="question-dialog-description">
+              <DialogContent className="max-w-4xl w-[95vw]" aria-describedby="question-dialog-description">
                 <DialogHeader>
                   <DialogTitle className="text-center text-xl sm:text-2xl">
                     {selectedQuestion && `${selectedQuestion.points} ${t("points")}`}
@@ -799,7 +799,7 @@ export default function GamePage() {
                         
                         {/* Turn Indicator & Active Power-up */}
                         <div className="text-center mb-4">
-                          <div className="text-lg font-bold text-blue-600">
+                          <div className="text-lg font-bold text-blue-600 break-words px-4">
                             {currentTurn === 'finished' ? 'Time\'s Up!' : 
                              currentTurn === 1 ? `${gameState.team1Name}'s Turn` : 
                              `${gameState.team2Name}'s Turn`}
@@ -904,27 +904,29 @@ export default function GamePage() {
                           )}
                         </div>
                       ) : (
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                          <Button
-                            onClick={() => handleAnswerResult(1)}
-                            variant="default"
-                            className="h-12 sm:h-14 bg-green-600 hover:bg-green-700 text-sm sm:text-base"
-                          >
-                            {gameState.team1Name}
-                          </Button>
+                        <div className="flex flex-col gap-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <Button
+                              onClick={() => handleAnswerResult(1)}
+                              variant="default"
+                              className="h-14 sm:h-16 bg-green-600 hover:bg-green-700 text-sm sm:text-base px-2 py-2"
+                            >
+                              <span className="break-words text-center leading-tight">{gameState.team1Name}</span>
+                            </Button>
+                            <Button
+                              onClick={() => handleAnswerResult(2)}
+                              variant="default"
+                              className="h-14 sm:h-16 bg-green-600 hover:bg-green-700 text-sm sm:text-base px-2 py-2"
+                            >
+                              <span className="break-words text-center leading-tight">{gameState.team2Name}</span>
+                            </Button>
+                          </div>
                           <Button
                             onClick={() => handleAnswerResult(0)}
                             variant="secondary"
                             className="h-12 sm:h-14 text-sm sm:text-base"
                           >
                             {t("no_one")}
-                          </Button>
-                          <Button
-                            onClick={() => handleAnswerResult(2)}
-                            variant="default"
-                            className="h-12 sm:h-14 bg-green-600 hover:bg-green-700 text-sm sm:text-base"
-                          >
-                            {gameState.team2Name}
                           </Button>
                         </div>
                       )}

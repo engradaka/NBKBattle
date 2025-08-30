@@ -106,22 +106,72 @@ export default function CategorySelectionPage() {
             {/* Header */}
             <div className="text-center mb-6 sm:mb-8">
               <h1 className="responsive-title font-bold text-gray-900 mb-4 sm:mb-6">{t("select_categories")}</h1>
-              <div className="flex flex-col sm:flex-row justify-center items-center gap-2 sm:gap-4 mb-4 sm:mb-6">
-                <div className={`flex items-center gap-2 px-4 py-2 rounded-full ${isTeam1Complete ? "bg-green-100 text-green-800" : "bg-blue-100 text-blue-800"}`}>
-                  <span className="font-semibold">{team1Name}</span>
-                  <Badge variant="outline" className="bg-white">{team1Categories.length}/3</Badge>
+              <div className="flex flex-col sm:flex-row justify-center items-center gap-4 sm:gap-8 mb-4 sm:mb-6">
+                {/* Team 1 Card */}
+                <div className={`relative overflow-hidden rounded-2xl p-6 min-w-[200px] transition-all duration-300 transform hover:scale-105 ${
+                  isTeam1Complete 
+                    ? "bg-gradient-to-br from-green-400 to-green-600 text-white shadow-lg" 
+                    : "bg-gradient-to-br from-blue-400 to-blue-600 text-white shadow-lg"
+                }`}>
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -translate-y-10 translate-x-10"></div>
+                  <div className="relative z-10">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-lg font-bold">{team1Name}</span>
+                      {isTeam1Complete && <span className="text-2xl">🏆</span>}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="flex gap-1">
+                        {[...Array(3)].map((_, i) => (
+                          <div key={i} className={`w-3 h-3 rounded-full ${
+                            i < team1Categories.length ? "bg-white" : "bg-white/30"
+                          }`}></div>
+                        ))}
+                      </div>
+                      <span className="text-sm font-medium">{team1Categories.length}/3</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="hidden sm:block w-8 h-px bg-gray-300"></div>
-                <div className="sm:hidden w-px h-4 bg-gray-300"></div>
-                <div className={`flex items-center gap-2 px-4 py-2 rounded-full ${isTeam2Complete ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600"}`}>
-                  <span className="font-semibold">{team2Name}</span>
-                  <Badge variant="outline" className="bg-white">{team2Categories.length}/3</Badge>
+
+                {/* VS Divider */}
+                <div className="flex items-center justify-center">
+                  <div className="bg-gray-200 rounded-full p-3">
+                    <span className="text-gray-600 font-bold text-lg">VS</span>
+                  </div>
+                </div>
+
+                {/* Team 2 Card */}
+                <div className={`relative overflow-hidden rounded-2xl p-6 min-w-[200px] transition-all duration-300 transform hover:scale-105 ${
+                  isTeam2Complete 
+                    ? "bg-gradient-to-br from-green-400 to-green-600 text-white shadow-lg" 
+                    : "bg-gradient-to-br from-blue-200 to-blue-400 text-white shadow-lg"
+                }`}>
+                  <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -translate-y-10 translate-x-10"></div>
+                  <div className="relative z-10">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-lg font-bold">{team2Name}</span>
+                      {isTeam2Complete && <span className="text-2xl">🏆</span>}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="flex gap-1">
+                        {[...Array(3)].map((_, i) => (
+                          <div key={i} className={`w-3 h-3 rounded-full ${
+                            i < team2Categories.length ? "bg-white" : "bg-white/30"
+                          }`}></div>
+                        ))}
+                      </div>
+                      <span className="text-sm font-medium">{team2Categories.length}/3</span>
+                    </div>
+                  </div>
                 </div>
               </div>
               {!allTeamsComplete && (
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-md mx-auto">
                   <p className="text-blue-800 font-medium">
-                    {t("current_turn")}: <span className="font-bold">{currentTeamName}</span>
+                    {language === "ar" ? (
+                      <span dir="ltr">{currentTeamName}</span>
+                    ) : (
+                      <span>{t("current_turn")}: <span className="font-bold">{currentTeamName}</span></span>
+                    )} {language === "ar" && ` :${t("current_turn")}`}
                   </p>
                   <p className="text-blue-600 text-sm mt-1">
                     {t("select_categories_remaining", { count: 3 - currentCategories.length })}
@@ -170,13 +220,12 @@ export default function CategorySelectionPage() {
       )}
       {/* Full-width image */}
       {category.image_url ? (
-        <div className="w-full h-48 overflow-hidden rounded-t-lg">
+        <div className="w-full h-48 overflow-hidden rounded-t-lg relative">
           <Image
             src={category.image_url || "/placeholder.svg"}
             alt={getCategoryName(category)}
-            width={300}
-            height={192}
-            className="w-full h-full object-cover"
+            fill
+            className="object-cover"
             priority
           />
         </div>

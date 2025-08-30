@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -27,6 +27,7 @@ import {
   Trash2,
   ImageIcon,
   Search,
+  X,
 } from "lucide-react"
 import Image from "next/image"
 
@@ -75,6 +76,7 @@ export default function DashboardPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [searchResults, setSearchResults] = useState<any[]>([])
   const [showSearchResults, setShowSearchResults] = useState(false)
+  const searchRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     checkUser()
@@ -98,6 +100,20 @@ export default function DashboardPage() {
       fetchCategoriesWithStats()
     }
   }, [user])
+
+  // Close search results when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowSearchResults(false)
+        setSearchQuery("")
+        setSearchResults([])
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   const checkUser = async () => {
     try {
@@ -310,6 +326,13 @@ export default function DashboardPage() {
     }
   }
 
+  // Clear search
+  const clearSearch = () => {
+    setSearchQuery("")
+    setSearchResults([])
+    setShowSearchResults(false)
+  }
+
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>
   }
@@ -405,15 +428,23 @@ export default function DashboardPage() {
           <h2 className="text-xl sm:text-2xl font-bold text-gray-900">Categories</h2>
           
           {/* Global Question Search */}
-          <div className="relative w-full sm:w-96">
+          <div ref={searchRef} className="relative w-full sm:w-96">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input
                 placeholder="Search questions across all categories..."
                 value={searchQuery}
                 onChange={(e) => handleSearch(e.target.value)}
-                className="pl-10 pr-4"
+                className="pl-10 pr-10"
               />
+              {searchQuery && (
+                <button
+                  onClick={clearSearch}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
             </div>
             
             {/* Search Results Dropdown */}
