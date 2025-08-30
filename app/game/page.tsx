@@ -548,7 +548,13 @@ export default function GamePage() {
             <div className="text-center mb-4">
               <div className="inline-flex items-center px-4 py-2 bg-blue-100 rounded-lg">
                 <span className="text-lg font-bold text-blue-800">
-                  {language === 'ar' ? 'السؤال التالي: دور فريق' : 'Next Question:'} {gameState[`team${nextQuestionTurn}Name`]}{language === 'ar' ? '' : "'s Turn"}
+                  {language === 'ar' ? (
+                    <>
+                      <span dir="ltr">{gameState[`team${nextQuestionTurn}Name`]}</span> :السؤال التالي: دور فريق
+                    </>
+                  ) : (
+                    <>Next Question: {gameState[`team${nextQuestionTurn}Name`]}'s Turn</>
+                  )}
                 </span>
               </div>
             </div>
@@ -800,9 +806,14 @@ export default function GamePage() {
                         {/* Turn Indicator & Active Power-up */}
                         <div className="text-center mb-4">
                           <div className="text-lg font-bold text-blue-600 break-words px-4">
-                            {currentTurn === 'finished' ? 'Time\'s Up!' : 
-                             currentTurn === 1 ? `${gameState.team1Name}'s Turn` : 
-                             `${gameState.team2Name}'s Turn`}
+                            {currentTurn === 'finished' ? (language === 'ar' ? 'انتهى الوقت!' : 'Time\'s Up!') : 
+                             language === 'ar' ? (
+                               <>
+                                 <span dir="ltr">{currentTurn === 1 ? gameState.team1Name : gameState.team2Name}</span> دور
+                               </>
+                             ) : (
+                               currentTurn === 1 ? `${gameState.team1Name}'s Turn` : `${gameState.team2Name}'s Turn`
+                             )}
                           </div>
                           {activePowerUp && (
                             <div className="mt-2 p-2 bg-yellow-100 rounded-lg">
