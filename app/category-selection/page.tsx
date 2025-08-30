@@ -121,7 +121,11 @@ export default function CategorySelectionPage() {
               {!allTeamsComplete && (
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-md mx-auto">
                   <p className="text-blue-800 font-medium">
-                    {t("current_turn")}: <span className="font-bold">{currentTeamName}</span>
+                    {language === "ar" ? (
+                      <span dir="ltr">{currentTeamName}</span>
+                    ) : (
+                      <span>{t("current_turn")}: <span className="font-bold">{currentTeamName}</span></span>
+                    )} {language === "ar" && ` :${t("current_turn")}`}
                   </p>
                   <p className="text-blue-600 text-sm mt-1">
                     {t("select_categories_remaining", { count: 3 - currentCategories.length })}
