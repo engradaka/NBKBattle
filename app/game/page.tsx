@@ -418,7 +418,7 @@ export default function GamePage() {
     // Normal question selection
     setSelectedQuestion(question)
     setShowAnswer(false)
-    setCurrentTurn(nextQuestionTurn)
+    setCurrentTurn(1) // Always start with team 1
     setTimeLeft(30)
     setTimerActive(true)
   }
