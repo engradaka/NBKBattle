@@ -139,13 +139,13 @@ export default function DashboardPage() {
   }
 
   const fetchCategoriesWithStats = async () => {
-    // Fetch categories with question counts and total points
+    // Fetch categories with diamond question counts and total diamonds
     const { data: categoriesData, error: categoriesError } = await supabase
       .from("categories")
       .select(`
         *,
-        questions (
-          points
+        diamond_questions (
+          diamonds
         )
       `)
       .order("created_at", { ascending: false })
@@ -155,12 +155,12 @@ export default function DashboardPage() {
       return
     }
 
-    // Process categories to add question counts and total points
+    // Process categories to add question counts and total diamonds
     const processedCategories =
       categoriesData?.map((category: any) => ({
         ...category,
-        question_count: category.questions?.length || 0,
-        total_points: category.questions?.reduce((sum: number, q: any) => sum + q.points, 0) || 0,
+        question_count: category.diamond_questions?.length || 0,
+        total_points: category.diamond_questions?.reduce((sum: number, q: any) => sum + q.diamonds, 0) || 0,
       })) || []
 
     setCategories(processedCategories)
@@ -299,7 +299,7 @@ export default function DashboardPage() {
     return language === "ar" ? category.name_ar : category.name_en
   }
 
-  // Search questions across all categories
+  // Search diamond questions across all categories
   const handleSearch = async (query: string) => {
     setSearchQuery(query)
     if (query.length < 2) {
@@ -309,7 +309,7 @@ export default function DashboardPage() {
     }
 
     const { data: questionsData, error } = await supabase
-      .from("questions")
+      .from("diamond_questions")
       .select(`
         *,
         categories!inner(
@@ -412,8 +412,8 @@ export default function DashboardPage() {
             <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs sm:text-sm font-medium text-gray-600">Total Points</p>
-                  <p className="text-2xl sm:text-3xl font-bold text-gray-900">{stats.totalPoints}</p>
+                  <p className="text-xs sm:text-sm font-medium text-gray-600">Total Diamonds</p>
+                  <p className="text-2xl sm:text-3xl font-bold text-gray-900">💎 {stats.totalPoints}</p>
                 </div>
                 <div className="w-10 h-10 sm:w-12 sm:h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
                   <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-600" />
@@ -456,7 +456,7 @@ export default function DashboardPage() {
                       <span className="text-xs text-blue-600 font-medium">
                         {language === 'ar' ? question.categories.name_ar : question.categories.name_en}
                       </span>
-                      <span className="text-xs text-gray-500">{question.points} pts</span>
+                      <span className="text-xs text-gray-500">💎 {question.diamonds}</span>
                     </div>
                     <p className="text-sm font-medium text-gray-900 mb-1">
                       Q: {language === 'ar' ? question.question_ar : question.question_en}
@@ -597,7 +597,7 @@ export default function DashboardPage() {
                     </p>
                   </div>
                   <div className="text-right">
-                    <span className="text-lg font-bold text-gray-900">{category.total_points} pts</span>
+                    <span className="text-lg font-bold text-gray-900">💎 {category.total_points}</span>
                   </div>
                 </div>
               </CardHeader>

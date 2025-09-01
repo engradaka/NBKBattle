@@ -70,13 +70,13 @@ function shuffle<T>(array: T[]): T[] {
   return arr
 }
 
-// Get 2 questions per category/point value: unused first, then used
-function getQuestionsForCategoryPoint(
+// Get 1 question per category/point value: unused first, then used
+function getQuestionForCategoryPoint(
   categoryId: string,
   points: number,
   allQuestions: Question[],
   usedQuestionIds: string[]
-): Question[] {
+): Question | null {
   const questions = allQuestions.filter(
     q => q.category_id === categoryId && q.points === points
   )
@@ -88,31 +88,14 @@ function getQuestionsForCategoryPoint(
   // Shuffle unused questions for variety
   const shuffledUnused = shuffle(unusedQuestions)
   
-  // Sort used questions by when they were used (oldest first)
-  const sortedUsed = usedQuestions.sort((a, b) => {
-    const aIndex = usedQuestionIds.indexOf(a.id)
-    const bIndex = usedQuestionIds.indexOf(b.id)
-    return aIndex - bIndex
-  })
-  
-  // Take up to 2 questions: unused first, then used
-  const selectedQuestions = []
-  
-  // Add unused questions first
-  selectedQuestions.push(...shuffledUnused.slice(0, 2))
-  
-  // If we need more questions, add used ones
-  if (selectedQuestions.length < 2) {
-    const needed = 2 - selectedQuestions.length
-    selectedQuestions.push(...sortedUsed.slice(0, needed))
+  // Return first unused question, or first used question, or null
+  if (shuffledUnused.length > 0) {
+    return shuffledUnused[0]
+  } else if (usedQuestions.length > 0) {
+    return usedQuestions[0]
   }
   
-  // If still not enough, duplicate existing questions
-  while (selectedQuestions.length < 2 && questions.length > 0) {
-    selectedQuestions.push(questions[0])
-  }
-  
-  return selectedQuestions.slice(0, 2)
+  return null
 }
 
 export default function GamePage() {
@@ -354,12 +337,14 @@ export default function GamePage() {
     // Get used questions from localStorage
     const usedQuestionIds = getUsedQuestions()
     
-    // Pre-load questions map with unused/used logic
+    // Pre-load questions map with unused/used logic - Diamond system
     const map: Record<string, Question[]> = {}
     for (const category of categoriesData || []) {
-      for (const points of [200, 400, 600]) {
-        const key = `${category.id}-${points}`
-        map[key] = getQuestionsForCategoryPoint(category.id, points, sortedQuestions, usedQuestionIds)
+      // Map old points to new diamond values: 200->10, 400->25, 600->50
+      for (const [oldPoints, diamonds] of [[200, 10], [400, 25], [600, 50], [75, 75], [100, 100]]) {
+        const key = `${category.id}-${diamonds}`
+        const question = getQuestionForCategoryPoint(category.id, oldPoints, sortedQuestions, usedQuestionIds)
+        map[key] = question ? [question] : []
       }
     }
     setRotatedQuestionsMap(map)
@@ -620,7 +605,7 @@ export default function GamePage() {
               </div>
             </div>
 
-            {/* Game Board */}
+            {/* Game Board - Diamond System */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
               {categories.map((category) => (
                 <Card key={category.id} className="overflow-hidden">
@@ -628,50 +613,33 @@ export default function GamePage() {
                     <CardTitle className="text-lg sm:text-xl font-bold">{getCategoryName(category)}</CardTitle>
                   </CardHeader>
                   <CardContent className="p-0">
-                    <div className="grid grid-cols-2 gap-0">
-                      {/* Left Column */}
-                      <div className="space-y-0">
-                        {[600, 400, 200].map((points) => {
-                          const key = `${category.id}-${points}`
-                          const available = rotatedQuestionsMap[key] || []
-                          const firstQuestion = available[0] || null
-                          const isAnswered = firstQuestion ? gameState.answeredQuestions.includes(firstQuestion.id) : true
+                    {/* Single Column - Diamond Levels */}
+                    <div className="space-y-0">
+                      {[100, 75, 50, 25, 10].map((diamonds) => {
+                        const key = `${category.id}-${diamonds}`
+                        const available = rotatedQuestionsMap[key] || []
+                        const question = available[0] || null
+                        const isAnswered = question ? gameState.answeredQuestions.includes(question.id) : true
 
-                          return (
-                            <Button
-                              key={`left-${category.id}-${points}`}
-                              variant="outline"
-                              disabled={isAnswered || !firstQuestion}
-                              onClick={() => firstQuestion && handleQuestionClick(firstQuestion)}
-                              className="w-full h-16 sm:h-20 text-lg sm:text-xl font-bold rounded-none border-gray-200 hover:bg-blue-50 disabled:bg-gray-100 disabled:text-gray-400"
-                            >
-                              {isAnswered ? "✓" : points}
-                            </Button>
-                          )
-                        })}
-                      </div>
-
-                      {/* Right Column */}
-                      <div className="space-y-0">
-                        {[600, 400, 200].map((points) => {
-                          const key = `${category.id}-${points}`
-                          const available = rotatedQuestionsMap[key] || []
-                          const secondQuestion = available[1] || null
-                          const isAnswered = secondQuestion ? gameState.answeredQuestions.includes(secondQuestion.id) : true
-
-                          return (
-                            <Button
-                              key={`right-${category.id}-${points}`}
-                              variant="outline"
-                              disabled={isAnswered || !secondQuestion}
-                              onClick={() => secondQuestion && handleQuestionClick(secondQuestion)}
-                              className="w-full h-16 sm:h-20 text-lg sm:text-xl font-bold rounded-none border-gray-200 hover:bg-blue-50 disabled:bg-gray-100 disabled:text-gray-400"
-                            >
-                              {isAnswered ? "✓" : points}
-                            </Button>
-                          )
-                        })}
-                      </div>
+                        return (
+                          <Button
+                            key={`${category.id}-${diamonds}`}
+                            variant="outline"
+                            disabled={isAnswered || !question}
+                            onClick={() => question && handleQuestionClick(question)}
+                            className="w-full h-16 sm:h-20 text-base sm:text-lg font-bold rounded-none border-gray-200 hover:bg-blue-50 disabled:bg-gray-100 disabled:text-gray-400 flex items-center justify-center gap-2"
+                          >
+                            {isAnswered ? (
+                              <span className="text-green-600">✓</span>
+                            ) : (
+                              <>
+                                <span className="text-blue-600">💎</span>
+                                <span>{diamonds}</span>
+                              </>
+                            )}
+                          </Button>
+                        )
+                      })}
                     </div>
                   </CardContent>
                 </Card>

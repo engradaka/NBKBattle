@@ -44,26 +44,38 @@ export default function HomePage() {
         }}
       />
       
+      {/* NBK Logo - Top Right */}
+      <div className="absolute top-6 right-6 z-20">
+        <Image
+          src="/nbk-logo.png"
+          alt="NBK Logo"
+          width={150}
+          height={60}
+          priority
+          className="w-[150px] h-[60px]"
+        />
+      </div>
+      
       {/* Main Content Area */}
       <div className="relative z-10 h-full flex items-center justify-center p-6">
         <div className="flex flex-col items-center w-full max-w-md">
-          {/* NBK Logo */}
-          <div className="mb-8">
+          {/* Diamond Image - Above Card */}
+          <div className="mb-4">
             <Image
-              src="/nbk-logo.png"
-              alt="NBK Logo"
-              width={200}
-              height={80}
+              src="/diamond.webp"
+              alt="Diamond"
+              width={300}
+              height={300}
               priority
-              className="w-[200px] h-[80px] mx-auto"
+              className="w-[500px] h-[300px] mx-auto"
             />
           </div>
           
           {/* Card */}
           <Card className="w-full shadow-lg border-0">
-            <CardContent className="p-8 text-center">
-              <h1 className="text-3xl font-bold text-blue-900 mb-4">{t("welcome")}</h1>
-              <p className="text-gray-600 mb-8">{t("description")}</p>
+            <CardContent className="p-6 text-center">
+              <h1 className="text-2xl font-bold text-blue-900 mb-3">{t("welcome")}</h1>
+              <p className="text-gray-600 mb-6">{t("description")}</p>
               <Button
                 onClick={handleStartChallenge}
                 className="w-full h-12 bg-blue-800 hover:bg-blue-700 text-white font-semibold"

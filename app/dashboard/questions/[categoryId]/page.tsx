@@ -33,7 +33,7 @@ interface Question {
   question_en: string
   answer_ar: string
   answer_en: string
-  points: number
+  diamonds: number
   question_type: 'text' | 'video' | 'image' | 'audio'
   media_url?: string
   media_duration?: number
@@ -50,7 +50,7 @@ export default function CategoryQuestionsPage() {
     question_en: "",
     answer_ar: "",
     answer_en: "",
-    points: 200,
+    diamonds: 10,
     question_type: 'text' as 'text' | 'video' | 'image' | 'audio',
     media_url: "",
     media_duration: 5,
@@ -82,10 +82,10 @@ export default function CategoryQuestionsPage() {
 
   const fetchQuestions = async () => {
     const { data, error } = await supabase
-      .from("questions")
+      .from("diamond_questions")
       .select("*")
       .eq("category_id", categoryId)
-      .order("points")
+      .order("diamonds", { ascending: false })
       .order("created_at")
 
     if (error) {
@@ -138,7 +138,7 @@ export default function CategoryQuestionsPage() {
 
     if (editingQuestion) {
       // Update existing question
-      const { error } = await supabase.from("questions").update(questionData).eq("id", editingQuestion.id)
+      const { error } = await supabase.from("diamond_questions").update(questionData).eq("id", editingQuestion.id)
 
       if (error) {
         console.error("Error updating question:", error)
@@ -146,7 +146,7 @@ export default function CategoryQuestionsPage() {
       }
     } else {
       // Create new question
-      const { error } = await supabase.from("questions").insert([questionData])
+      const { error } = await supabase.from("diamond_questions").insert([questionData])
 
       if (error) {
         console.error("Error creating question:", error)
@@ -161,7 +161,7 @@ export default function CategoryQuestionsPage() {
       question_en: "",
       answer_ar: "",
       answer_en: "",
-      points: 200,
+      diamonds: 10,
       question_type: 'text',
       media_url: "",
       media_duration: 5,
@@ -178,7 +178,7 @@ export default function CategoryQuestionsPage() {
       question_en: question.question_en,
       answer_ar: question.answer_ar,
       answer_en: question.answer_en,
-      points: question.points,
+      diamonds: question.diamonds,
       question_type: question.question_type || 'text',
       media_url: question.media_url || "",
       media_duration: question.media_duration || 5,
@@ -190,7 +190,7 @@ export default function CategoryQuestionsPage() {
 
   const handleDelete = async (id: string) => {
     if (confirm("Are you sure you want to delete this question?")) {
-      const { error } = await supabase.from("questions").delete().eq("id", id)
+      const { error } = await supabase.from("diamond_questions").delete().eq("id", id)
 
       if (error) {
         console.error("Error deleting question:", error)
@@ -208,7 +208,7 @@ export default function CategoryQuestionsPage() {
       question_en: "",
       answer_ar: "",
       answer_en: "",
-      points: 200,
+      diamonds: 10,
       question_type: 'text',
       media_url: "",
       media_duration: 5,
@@ -240,7 +240,7 @@ export default function CategoryQuestionsPage() {
     return isArabicText(text) ? 'rtl' : 'ltr'
   }
 
-  const totalPoints = questions.reduce((sum, q) => sum + q.points, 0)
+  const totalDiamonds = questions.reduce((sum, q) => sum + q.diamonds, 0)
 
   if (!category) {
     return <div className="min-h-screen flex items-center justify-center">Loading...</div>
@@ -263,7 +263,7 @@ export default function CategoryQuestionsPage() {
               <h1 className="text-2xl font-bold text-gray-900">{getCategoryName(category)} Questions</h1>
               <p className="text-gray-600 mt-1">
                 Manage questions for the {getCategoryName(category)} category • {questions.length} questions •{" "}
-                {totalPoints} total points
+                💎 {totalDiamonds} total diamonds
               </p>
             </div>
 
@@ -404,18 +404,20 @@ export default function CategoryQuestionsPage() {
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="points">Points</Label>
+                    <Label htmlFor="diamonds">Diamond Value</Label>
                     <Select
-                      value={formData.points.toString()}
-                      onValueChange={(value: string) => setFormData({ ...formData, points: Number.parseInt(value) })}
+                      value={formData.diamonds.toString()}
+                      onValueChange={(value: string) => setFormData({ ...formData, diamonds: Number.parseInt(value) })}
                     >
-                      <SelectTrigger id="points">
+                      <SelectTrigger id="diamonds">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="200">200 Points</SelectItem>
-                        <SelectItem value="400">400 Points</SelectItem>
-                        <SelectItem value="600">600 Points</SelectItem>
+                        <SelectItem value="10">💎 10 Diamonds</SelectItem>
+                        <SelectItem value="25">💎 25 Diamonds</SelectItem>
+                        <SelectItem value="50">💎 50 Diamonds</SelectItem>
+                        <SelectItem value="75">💎 75 Diamonds</SelectItem>
+                        <SelectItem value="100">💎 100 Diamonds</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -440,7 +442,7 @@ export default function CategoryQuestionsPage() {
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-xl font-bold">Questions ({questions.length})</h2>
           <div className="text-right">
-            <span className="text-lg font-bold">Total Points: {totalPoints}</span>
+            <span className="text-lg font-bold">Total Diamonds: 💎 {totalDiamonds}</span>
           </div>
         </div>
 
@@ -452,7 +454,7 @@ export default function CategoryQuestionsPage() {
                 <div className="flex justify-between items-start mb-4">
                   <div className="flex gap-4">
                     <Badge variant="outline" className="text-sm">
-                      {question.points} pts
+                      💎 {question.diamonds}
                     </Badge>
                     <Badge variant={question.question_type === 'text' ? 'secondary' : 'default'} className="text-sm">
                       {question.question_type === 'text' && <FileText className="w-3 h-3 mr-1" />}
@@ -462,7 +464,7 @@ export default function CategoryQuestionsPage() {
                       {question.question_type || 'text'}
                     </Badge>
                     <Badge variant="secondary" className="text-sm">
-                      Column {(index % 2) + 1}
+                      Level {question.diamonds === 10 ? '1' : question.diamonds === 25 ? '2' : question.diamonds === 50 ? '3' : question.diamonds === 75 ? '4' : '5'}
                     </Badge>
                     <span className="text-sm text-gray-500">
                       Added {new Date(question.created_at).toLocaleDateString()}
