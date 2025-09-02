@@ -37,6 +37,9 @@ interface Question {
   question_type: 'text' | 'video' | 'image' | 'audio'
   media_url?: string
   media_duration?: number
+  answer_type: 'text' | 'video' | 'image' | 'audio'
+  answer_media_url?: string
+  answer_media_duration?: number
   created_at: string
 }
 
@@ -54,9 +57,14 @@ export default function CategoryQuestionsPage() {
     question_type: 'text' as 'text' | 'video' | 'image' | 'audio',
     media_url: "",
     media_duration: 5,
+    answer_type: 'text' as 'text' | 'video' | 'image' | 'audio',
+    answer_media_url: "",
+    answer_media_duration: 5,
   })
   const [selectedMedia, setSelectedMedia] = useState<File | null>(null)
   const [mediaPreview, setMediaPreview] = useState<string>("")
+  const [selectedAnswerMedia, setSelectedAnswerMedia] = useState<File | null>(null)
+  const [answerMediaPreview, setAnswerMediaPreview] = useState<string>("")
   const router = useRouter()
   const params = useParams()
   const { language } = useLanguage()
@@ -107,12 +115,25 @@ export default function CategoryQuestionsPage() {
     }
   }
 
+  const handleAnswerMediaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setSelectedAnswerMedia(file)
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        setAnswerMediaPreview(e.target?.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     let mediaUrl = formData.media_url
+    let answerMediaUrl = formData.answer_media_url
 
-    // Upload media if selected
+    // Upload question media if selected
     if (selectedMedia && formData.question_type !== 'text') {
       const fileExt = selectedMedia.name.split(".").pop()
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
@@ -130,10 +151,29 @@ export default function CategoryQuestionsPage() {
       mediaUrl = publicUrl
     }
 
+    // Upload answer media if selected
+    if (selectedAnswerMedia && formData.answer_type !== 'text') {
+      const fileExt = selectedAnswerMedia.name.split(".").pop()
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
+      const filePath = `answer-media/${fileName}`
+
+      const { error: uploadError } = await supabase.storage.from("images").upload(filePath, selectedAnswerMedia)
+
+      if (uploadError) {
+        console.error("Error uploading answer media:", uploadError)
+        alert(`Error uploading answer media: ${uploadError.message}`)
+        return
+      }
+
+      const { data: { publicUrl } } = supabase.storage.from("images").getPublicUrl(filePath)
+      answerMediaUrl = publicUrl
+    }
+
     const questionData = {
       ...formData,
       category_id: categoryId,
       media_url: mediaUrl,
+      answer_media_url: answerMediaUrl,
     }
 
     if (editingQuestion) {
@@ -165,9 +205,14 @@ export default function CategoryQuestionsPage() {
       question_type: 'text',
       media_url: "",
       media_duration: 5,
+      answer_type: 'text',
+      answer_media_url: "",
+      answer_media_duration: 5,
     })
     setSelectedMedia(null)
     setMediaPreview("")
+    setSelectedAnswerMedia(null)
+    setAnswerMediaPreview("")
     fetchQuestions()
   }
 
@@ -182,9 +227,14 @@ export default function CategoryQuestionsPage() {
       question_type: question.question_type || 'text',
       media_url: question.media_url || "",
       media_duration: question.media_duration || 5,
+      answer_type: question.answer_type || 'text',
+      answer_media_url: question.answer_media_url || "",
+      answer_media_duration: question.answer_media_duration || 5,
     })
     setSelectedMedia(null)
     setMediaPreview("")
+    setSelectedAnswerMedia(null)
+    setAnswerMediaPreview("")
     setIsDialogOpen(true)
   }
 
@@ -212,9 +262,14 @@ export default function CategoryQuestionsPage() {
       question_type: 'text',
       media_url: "",
       media_duration: 5,
+      answer_type: 'text',
+      answer_media_url: "",
+      answer_media_duration: 5,
     })
     setSelectedMedia(null)
     setMediaPreview("")
+    setSelectedAnswerMedia(null)
+    setAnswerMediaPreview("")
   }
 
   const getCategoryName = (category: Category) => {
@@ -402,6 +457,77 @@ export default function CategoryQuestionsPage() {
                       />
                     </div>
                   </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="answer_type">Answer Type</Label>
+                    <Select
+                      value={formData.answer_type}
+                      onValueChange={(value: 'text' | 'video' | 'image' | 'audio') => setFormData({ ...formData, answer_type: value })}
+                    >
+                      <SelectTrigger id="answer_type">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="text">
+                          <div className="flex items-center gap-2">
+                            <FileText className="w-4 h-4" />
+                            Text Answer
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="video">
+                          <div className="flex items-center gap-2">
+                            <Video className="w-4 h-4" />
+                            Video Answer
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="image">
+                          <div className="flex items-center gap-2">
+                            <ImageIcon className="w-4 h-4" />
+                            Image Answer
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="audio">
+                          <div className="flex items-center gap-2">
+                            <Music className="w-4 h-4" />
+                            Audio Answer
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {formData.answer_type !== 'text' && (
+                    <div className="space-y-2">
+                      <Label htmlFor="answer_media_file">
+                        {formData.answer_type === 'video' && 'Answer Video File'}
+                        {formData.answer_type === 'image' && 'Answer Image File'}
+                        {formData.answer_type === 'audio' && 'Answer Audio File'}
+                      </Label>
+                      <Input
+                        id="answer_media_file"
+                        type="file"
+                        accept={
+                          formData.answer_type === 'video' ? 'video/*' :
+                          formData.answer_type === 'image' ? 'image/*' :
+                          'audio/*'
+                        }
+                        onChange={handleAnswerMediaChange}
+                      />
+                      {(formData.answer_type === 'video' || formData.answer_type === 'audio') && (
+                        <div className="space-y-2">
+                          <Label htmlFor="answer_media_duration">Answer Duration (seconds)</Label>
+                          <Input
+                            id="answer_media_duration"
+                            type="number"
+                            min="1"
+                            max="60"
+                            value={formData.answer_media_duration}
+                            onChange={(e) => setFormData({ ...formData, answer_media_duration: parseInt(e.target.value) })}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   <div className="space-y-2">
                     <Label htmlFor="diamonds">Diamond Value</Label>

@@ -29,6 +29,9 @@ interface Question {
   question_type?: 'text' | 'video' | 'image' | 'audio'
   media_url?: string
   media_duration?: number
+  answer_type?: 'text' | 'video' | 'image' | 'audio'
+  answer_media_url?: string
+  answer_media_duration?: number
 }
 
 interface PowerUp {
@@ -852,16 +855,61 @@ export default function GamePage() {
                     {/* Answer */}
                     {showAnswer && (
                       <div className="text-center p-6 bg-green-50 dark:bg-green-950 rounded-lg border-2 border-green-200 dark:border-green-800">
+                        {/* Text Answer */}
                         <p
-                          className="text-lg sm:text-xl font-bold text-green-800 dark:text-green-200 break-words whitespace-normal leading-relaxed"
+                          className="text-lg sm:text-xl font-bold text-green-800 dark:text-green-200 break-words whitespace-normal leading-relaxed mb-4"
                           dir={getTextDirection(getAnswerText(selectedQuestion))}
                           style={{ textAlign: getTextDirection(getAnswerText(selectedQuestion)) === 'rtl' ? 'right' : 'left' }}
                         >
                           {getAnswerText(selectedQuestion)}
                           {activePowerUp?.id === 'double' && (
-                            <span className={`${getTextDirection(getAnswerText(selectedQuestion)) === 'rtl' ? 'mr-2' : 'ml-2'} text-red-600`}>🔥 (Double Points!)</span>
+                            <span className={`${getTextDirection(getAnswerText(selectedQuestion)) === 'rtl' ? 'mr-2' : 'ml-2'} text-red-600`}>🔥 (Double Diamonds!)</span>
                           )}
                         </p>
+                        
+                        {/* Answer Media Content */}
+                        {selectedQuestion.answer_media_url && (
+                          <div className="mt-4">
+                            {selectedQuestion.answer_type === 'image' && (
+                              <div className="flex justify-center">
+                                <Image
+                                  src={selectedQuestion.answer_media_url}
+                                  alt="Answer image"
+                                  width={400}
+                                  height={300}
+                                  className="rounded-lg object-cover max-w-full h-auto"
+                                />
+                              </div>
+                            )}
+                            
+                            {selectedQuestion.answer_type === 'video' && (
+                              <div className="flex justify-center">
+                                <video
+                                  src={selectedQuestion.answer_media_url}
+                                  controls
+                                  autoPlay
+                                  className="rounded-lg max-w-full h-auto"
+                                  style={{ maxHeight: '400px' }}
+                                >
+                                  Your browser does not support the video tag.
+                                </video>
+                              </div>
+                            )}
+                            
+                            {selectedQuestion.answer_type === 'audio' && (
+                              <div className="flex justify-center">
+                                <audio
+                                  src={selectedQuestion.answer_media_url}
+                                  controls
+                                  autoPlay
+                                  className="w-full max-w-md"
+                                >
+                                  Your browser does not support the audio tag.
+                                </audio>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     )}
 
