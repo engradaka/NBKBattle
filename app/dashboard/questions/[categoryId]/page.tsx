@@ -304,46 +304,47 @@ export default function CategoryQuestionsPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 px-4 sm:px-6 py-4">
+      <header className="bg-white border-b border-gray-200 px-3 sm:px-4 md:px-6 py-3 sm:py-4">
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-center gap-4 mb-4">
-            <Button onClick={() => router.push("/dashboard")} variant="outline" className="flex items-center gap-2">
-              <ArrowLeft className="w-4 h-4" />
-              Back to Dashboard
+          <div className="flex items-center gap-2 sm:gap-4 mb-3 sm:mb-4">
+            <Button onClick={() => router.push("/dashboard")} variant="outline" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+              <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">Back to Dashboard</span>
+              <span className="sm:hidden">Back</span>
             </Button>
           </div>
 
-          <div className="flex justify-between items-start">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">{getCategoryName(category)} Questions</h1>
-              <p className="text-gray-600 mt-1">
-                Manage questions for the {getCategoryName(category)} category • {questions.length} questions •{" "}
-                💎 {totalDiamonds} total diamonds
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-0">
+            <div className="flex-1">
+              <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 break-words">{getCategoryName(category)} Questions</h1>
+              <p className="text-xs sm:text-sm md:text-base text-gray-600 mt-1">
+                <span className="block sm:inline">Manage questions for {getCategoryName(category)}</span>
+                <span className="block sm:inline"> • {questions.length} questions • 💎 {totalDiamonds} diamonds</span>
               </p>
             </div>
 
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="bg-blue-600 hover:bg-blue-700">
-                  <Plus className="h-4 w-4 mr-2" />
+                <Button className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto text-sm">
+                  <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
                   Add Question
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogContent className="w-[95vw] max-w-sm sm:max-w-md md:max-w-2xl lg:max-w-4xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>{editingQuestion ? "Edit Question" : "Add New Question"}</DialogTitle>
                   <DialogDescription>
                     {editingQuestion ? "Edit the question details below" : "Create a new quiz question with text, image, video, or audio content"}
                   </DialogDescription>
                 </DialogHeader>
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="question_type">Question Type</Label>
+                    <Label htmlFor="question_type" className="text-sm font-medium">Question Type</Label>
                     <Select
                       value={formData.question_type}
                       onValueChange={(value: 'text' | 'video' | 'image' | 'audio') => setFormData({ ...formData, question_type: value })}
                     >
-                      <SelectTrigger id="question_type">
+                      <SelectTrigger id="question_type" className="text-sm">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -408,51 +409,55 @@ export default function CategoryQuestionsPage() {
                     </div>
                   )}
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="question_ar">Arabic Question</Label>
+                      <Label htmlFor="question_ar" className="text-sm font-medium">Arabic Question</Label>
                       <Textarea
                         id="question_ar"
                         value={formData.question_ar}
                         onChange={(e) => setFormData({ ...formData, question_ar: e.target.value })}
                         placeholder="Enter question in Arabic"
-                        rows={3}
+                        rows={2}
+                        className="text-sm"
                         required
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="question_en">English Question</Label>
+                      <Label htmlFor="question_en" className="text-sm font-medium">English Question</Label>
                       <Textarea
                         id="question_en"
                         value={formData.question_en}
                         onChange={(e) => setFormData({ ...formData, question_en: e.target.value })}
                         placeholder="Enter question in English"
-                        rows={3}
+                        rows={2}
+                        className="text-sm"
                         required
                       />
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="answer_ar">Arabic Answer</Label>
+                      <Label htmlFor="answer_ar" className="text-sm font-medium">Arabic Answer</Label>
                       <Textarea
                         id="answer_ar"
                         value={formData.answer_ar}
                         onChange={(e) => setFormData({ ...formData, answer_ar: e.target.value })}
                         placeholder="Enter answer in Arabic"
                         rows={2}
+                        className="text-sm"
                         required
                       />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="answer_en">English Answer</Label>
+                      <Label htmlFor="answer_en" className="text-sm font-medium">English Answer</Label>
                       <Textarea
                         id="answer_en"
                         value={formData.answer_en}
                         onChange={(e) => setFormData({ ...formData, answer_en: e.target.value })}
                         placeholder="Enter answer in English"
                         rows={2}
+                        className="text-sm"
                         required
                       />
                     </div>
@@ -548,11 +553,11 @@ export default function CategoryQuestionsPage() {
                     </Select>
                   </div>
 
-                  <div className="flex justify-end space-x-2">
-                    <Button type="button" variant="outline" onClick={handleDialogClose}>
+                  <div className="flex flex-col sm:flex-row justify-end gap-2 sm:gap-2 sm:space-x-0">
+                    <Button type="button" variant="outline" onClick={handleDialogClose} className="text-sm">
                       Cancel
                     </Button>
-                    <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+                    <Button type="submit" className="bg-blue-600 hover:bg-blue-700 text-sm">
                       {editingQuestion ? "Update" : "Create"}
                     </Button>
                   </div>
@@ -563,12 +568,12 @@ export default function CategoryQuestionsPage() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto p-4 sm:p-6">
+      <main className="max-w-7xl mx-auto p-3 sm:p-4 md:p-6">
         {/* Questions Header */}
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-xl font-bold">Questions ({questions.length})</h2>
-          <div className="text-right">
-            <span className="text-lg font-bold">Total Diamonds: 💎 {totalDiamonds}</span>
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-0 mb-4 sm:mb-6">
+          <h2 className="text-lg sm:text-xl font-bold">Questions ({questions.length})</h2>
+          <div className="text-left sm:text-right">
+            <span className="text-sm sm:text-base md:text-lg font-bold">Total: 💎 {totalDiamonds}</span>
           </div>
         </div>
 
@@ -576,32 +581,34 @@ export default function CategoryQuestionsPage() {
         <div className="space-y-4">
           {questions.map((question, index) => (
             <Card key={question.id} className="overflow-hidden">
-              <CardContent className="p-6">
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex gap-4">
-                    <Badge variant="outline" className="text-sm">
+              <CardContent className="p-3 sm:p-4 md:p-6">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-0 mb-3 sm:mb-4">
+                  <div className="flex flex-wrap gap-2 sm:gap-3 md:gap-4">
+                    <Badge variant="outline" className="text-xs sm:text-sm">
                       💎 {question.diamonds}
                     </Badge>
-                    <Badge variant={question.question_type === 'text' ? 'secondary' : 'default'} className="text-sm">
-                      {question.question_type === 'text' && <FileText className="w-3 h-3 mr-1" />}
-                      {question.question_type === 'video' && <Video className="w-3 h-3 mr-1" />}
-                      {question.question_type === 'image' && <ImageIcon className="w-3 h-3 mr-1" />}
-                      {question.question_type === 'audio' && <Music className="w-3 h-3 mr-1" />}
-                      {question.question_type || 'text'}
+                    <Badge variant={question.question_type === 'text' ? 'secondary' : 'default'} className="text-xs sm:text-sm">
+                      {question.question_type === 'text' && <FileText className="w-2 h-2 sm:w-3 sm:h-3 mr-1" />}
+                      {question.question_type === 'video' && <Video className="w-2 h-2 sm:w-3 sm:h-3 mr-1" />}
+                      {question.question_type === 'image' && <ImageIcon className="w-2 h-2 sm:w-3 sm:h-3 mr-1" />}
+                      {question.question_type === 'audio' && <Music className="w-2 h-2 sm:w-3 sm:h-3 mr-1" />}
+                      <span className="hidden sm:inline">{question.question_type || 'text'}</span>
                     </Badge>
-                    <Badge variant="secondary" className="text-sm">
+                    <Badge variant="secondary" className="text-xs sm:text-sm hidden md:inline-flex">
                       Level {question.diamonds === 10 ? '1' : question.diamonds === 25 ? '2' : question.diamonds === 50 ? '3' : question.diamonds === 75 ? '4' : '5'}
                     </Badge>
-                    <span className="text-sm text-gray-500">
+                    <span className="text-xs sm:text-sm text-gray-500 hidden lg:inline">
                       Added {new Date(question.created_at).toLocaleDateString()}
                     </span>
                   </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => handleEdit(question)}>
-                      <Edit className="h-4 w-4" />
+                  <div className="flex gap-1 sm:gap-2 self-end sm:self-start">
+                    <Button variant="outline" size="sm" onClick={() => handleEdit(question)} className="text-xs sm:text-sm px-2 sm:px-3">
+                      <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
+                      <span className="hidden sm:inline ml-1">Edit</span>
                     </Button>
-                    <Button variant="destructive" size="sm" onClick={() => handleDelete(question.id)}>
-                      <Trash2 className="h-4 w-4" />
+                    <Button variant="destructive" size="sm" onClick={() => handleDelete(question.id)} className="text-xs sm:text-sm px-2 sm:px-3">
+                      <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
+                      <span className="hidden sm:inline ml-1">Delete</span>
                     </Button>
                   </div>
                 </div>
@@ -609,7 +616,7 @@ export default function CategoryQuestionsPage() {
                 <div className="space-y-2">
                   <div>
                     <h3 
-                      className="font-medium text-gray-900"
+                      className="text-sm sm:text-base font-medium text-gray-900 break-words"
                       dir={getTextDirection(getQuestionText(question))}
                       style={{ textAlign: getTextDirection(getQuestionText(question)) === 'rtl' ? 'right' : 'left' }}
                     >
@@ -617,7 +624,7 @@ export default function CategoryQuestionsPage() {
                     </h3>
                   </div>
                   {question.media_url && question.question_type === 'image' && (
-                    <div className="w-24 h-24">
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24">
                       <Image
                         src={question.media_url}
                         alt="Question media"
@@ -628,7 +635,7 @@ export default function CategoryQuestionsPage() {
                     </div>
                   )}
                   {question.media_url && (question.question_type === 'video' || question.question_type === 'audio') && (
-                    <div className="text-sm text-blue-600">
+                    <div className="text-xs sm:text-sm text-blue-600">
                       Media attached • {question.media_duration || 5}s duration
                     </div>
                   )}
@@ -636,8 +643,8 @@ export default function CategoryQuestionsPage() {
                     dir={getTextDirection(getAnswerText(question))}
                     style={{ textAlign: getTextDirection(getAnswerText(question)) === 'rtl' ? 'right' : 'left' }}
                   >
-                    <span className="text-sm text-green-600 font-medium">Answer: </span>
-                    <span className="text-sm text-green-700">{getAnswerText(question)}</span>
+                    <span className="text-xs sm:text-sm text-green-600 font-medium">Answer: </span>
+                    <span className="text-xs sm:text-sm text-green-700 break-words">{getAnswerText(question)}</span>
                   </div>
                 </div>
               </CardContent>
