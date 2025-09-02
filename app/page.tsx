@@ -58,8 +58,8 @@ export default function HomePage() {
       
       {/* Main Content Area */}
       <div className="relative z-10 h-full flex flex-col">
-        <div className="flex-1 flex items-center justify-center p-6">
-          <div className="flex flex-col items-center w-full max-w-md">
+        <div className="flex-1 flex items-center justify-center p-4 md:p-6">
+          <div className="flex flex-col items-center w-full max-w-md mx-auto">
             {/* Diamond Image - Above Card */}
             <div className="mb-4">
               <Image

@@ -126,12 +126,12 @@ export default function Sidebar() {
 
       {/* Mobile Sidebar Overlay */}
       {open && (
-        <div className="fixed inset-0 z-40 md:hidden">
+        <div className="fixed inset-0 z-50 md:hidden">
           <div
             className="fixed inset-0 bg-black bg-opacity-30"
             onClick={toggleSidebar}
           />
-          <div className="fixed top-0 left-0 w-16 bg-gray-50 border-r border-gray-200 flex flex-col items-center py-6 space-y-4 z-50 h-screen">
+          <div className="fixed top-0 left-0 w-16 bg-gray-50 border-r border-gray-200 flex flex-col items-center py-6 space-y-4 z-50 h-screen shadow-lg">
             {/* Auth Button - Login or Dashboard */}
             {user ? (
               <>
