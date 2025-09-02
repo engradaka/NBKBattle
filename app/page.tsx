@@ -57,34 +57,43 @@ export default function HomePage() {
       </div>
       
       {/* Main Content Area */}
-      <div className="relative z-10 h-full flex items-center justify-center p-6">
-        <div className="flex flex-col items-center w-full max-w-md">
-          {/* Diamond Image - Above Card */}
-          <div className="mb-4">
-            <Image
-              src="/diamond.webp"
-              alt="Diamond"
-              width={300}
-              height={300}
-              priority
-              className="w-[500px] h-[300px] mx-auto"
-            />
+      <div className="relative z-10 h-full flex flex-col">
+        <div className="flex-1 flex items-center justify-center p-6">
+          <div className="flex flex-col items-center w-full max-w-md">
+            {/* Diamond Image - Above Card */}
+            <div className="mb-4">
+              <Image
+                src="/diamond.webp"
+                alt="Diamond"
+                width={300}
+                height={300}
+                priority
+                className="w-[500px] h-[300px] mx-auto"
+              />
+            </div>
+            
+            {/* Card */}
+            <Card className="w-full shadow-lg border-0">
+              <CardContent className="p-6 text-center">
+                <h1 className="text-2xl font-bold text-blue-900 mb-3">{t("welcome")}</h1>
+                <p className="text-gray-600 mb-6">{t("description")}</p>
+                <Button
+                  onClick={handleStartChallenge}
+                  className="w-full h-12 bg-blue-800 hover:bg-blue-700 text-white font-semibold"
+                >
+                  {t("start_challenge")}
+                </Button>
+              </CardContent>
+            </Card>
           </div>
-          
-          {/* Card */}
-          <Card className="w-full shadow-lg border-0">
-            <CardContent className="p-6 text-center">
-              <h1 className="text-2xl font-bold text-blue-900 mb-3">{t("welcome")}</h1>
-              <p className="text-gray-600 mb-6">{t("description")}</p>
-              <Button
-                onClick={handleStartChallenge}
-                className="w-full h-12 bg-blue-800 hover:bg-blue-700 text-white font-semibold"
-              >
-                {t("start_challenge")}
-              </Button>
-            </CardContent>
-          </Card>
         </div>
+        
+        {/* Footer */}
+        <footer className="relative z-10 py-4 text-center">
+          <p className="text-sm text-gray-500">
+            © {new Date().getFullYear()} NBK. All rights reserved.
+          </p>
+        </footer>
       </div>
     </div>
   )

@@ -55,7 +55,7 @@ export default function CategorySelectionPage() {
     else setTeam2Categories(categories)
   }
 
-  // Selection logic
+  // Alternating selection logic - Draft style
   const handleCategorySelect = (categoryId: string) => {
     const currentCategories = getCurrentTeamCategories()
     const otherCategories = currentTeam === 1 ? team2Categories : team1Categories
@@ -63,19 +63,29 @@ export default function CategorySelectionPage() {
     // Prevent picking categories chosen by the other team
     if (otherCategories.includes(categoryId)) return
 
-    // Deselect if already picked
+    // Deselect if already picked (only current team can deselect their own)
     if (currentCategories.includes(categoryId)) {
       setCurrentTeamCategories(currentCategories.filter((id) => id !== categoryId))
-    } else if (currentCategories.length < 3) {
-      setCurrentTeamCategories([...currentCategories, categoryId])
+      return
+    }
+
+    // Add category and switch turns
+    if (currentCategories.length < 3) {
+      const newCategories = [...currentCategories, categoryId]
+      setCurrentTeamCategories(newCategories)
+      
+      // Auto-switch turns after selection (unless game is complete)
+      const totalSelections = newCategories.length + otherCategories.length
+      if (totalSelections < 6) { // Not all 6 categories selected yet
+        // Switch to other team
+        setCurrentTeam(currentTeam === 1 ? 2 : 1)
+      }
     }
   }
 
-  // Button logic
+  // No longer needed - teams switch automatically
   const handleNextTeam = () => {
-    if (currentTeam === 1 && team1Categories.length === 3) {
-      setCurrentTeam(2)
-    }
+    // This function is no longer used in alternating selection
   }
 
   const handleStartGame = () => {
@@ -262,15 +272,7 @@ export default function CategorySelectionPage() {
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 <span className="text-sm sm:text-base">{t("back")}</span>
               </Button>
-              {currentTeam === 1 && isTeam1Complete && !isTeam2Complete && (
-                <Button
-                  onClick={handleNextTeam}
-                  className="w-full sm:w-auto px-6 sm:px-8 h-10 sm:h-12 gradient-blue hover:opacity-90 transition-opacity rounded-xl font-semibold touch-button"
-                >
-                  <span className="text-sm sm:text-base">{team2Name} {t("next")}</span>
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              )}
+              {/* No next team button needed - automatic switching */}
               {allTeamsComplete && (
                 <Button
                   onClick={handleStartGame}

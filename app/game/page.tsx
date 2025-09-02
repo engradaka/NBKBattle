@@ -25,7 +25,7 @@ interface Question {
   question_en: string
   answer_ar: string
   answer_en: string
-  points: number
+  diamonds: number
   question_type?: 'text' | 'video' | 'image' | 'audio'
   media_url?: string
   media_duration?: number
@@ -70,15 +70,15 @@ function shuffle<T>(array: T[]): T[] {
   return arr
 }
 
-// Get 1 question per category/point value: unused first, then used
+// Get 1 question per category/diamond value: unused first, then used
 function getQuestionForCategoryPoint(
   categoryId: string,
-  points: number,
+  diamonds: number,
   allQuestions: Question[],
   usedQuestionIds: string[]
 ): Question | null {
   const questions = allQuestions.filter(
-    q => q.category_id === categoryId && q.points === points
+    q => q.category_id === categoryId && q.diamonds === diamonds
   )
   
   // Separate unused and used questions
@@ -190,24 +190,24 @@ export default function GamePage() {
     blockQuestion: createPowerUp('block', 'Block Question', 'Click any question to eliminate it', '🚫')
   }
 
-  // Check and grant power-ups - GUARANTEED AT SPECIFIC QUESTIONS
+  // Check and grant power-ups - GUARANTEED AT SPECIFIC QUESTIONS (Diamond System - 30 total questions)
   const checkPowerUpTriggers = () => {
     const scoreDiff = Math.abs(gameState.team1Score - gameState.team2Score)
     const losingTeam = gameState.team1Score < gameState.team2Score ? 1 : 2
     const totalQuestions = gameState.answeredQuestions.length
     
-    // GUARANTEED POWER-UPS AT SPECIFIC QUESTION NUMBERS
+    // GUARANTEED POWER-UPS AT SPECIFIC QUESTION NUMBERS (Adjusted for 30 questions total)
     
-    // 10th question - First power-up
-    if (totalQuestions === 10 && gameState.lastPowerUpGranted < 10) {
+    // 9th question - First power-up (30% through game)
+    if (totalQuestions === 9 && gameState.lastPowerUpGranted < 9) {
       const teamWithFewerPowerUps = gameState.team1PowerUps.length <= gameState.team2PowerUps.length ? 1 : 2
       grantPowerUp(teamWithFewerPowerUps, [availablePowerUps.questionSwap])
       return
     }
     
-    // 20th question - Second power-up
-    if (totalQuestions === 20 && gameState.lastPowerUpGranted < 20) {
-      if (scoreDiff >= 600) {
+    // 15th question - Second power-up (50% through game)
+    if (totalQuestions === 15 && gameState.lastPowerUpGranted < 15) {
+      if (scoreDiff >= 150) { // Adjusted for diamond values (was 600 points)
         // Give to losing team if there's a gap
         grantPowerUp(losingTeam, [availablePowerUps.doublePoints])
       } else {
@@ -218,16 +218,16 @@ export default function GamePage() {
       return
     }
     
-    // 25th question - Third power-up
-    if (totalQuestions === 25 && gameState.lastPowerUpGranted < 25) {
+    // 21st question - Third power-up (70% through game)
+    if (totalQuestions === 21 && gameState.lastPowerUpGranted < 21) {
       const teamWithFewerPowerUps = gameState.team1PowerUps.length <= gameState.team2PowerUps.length ? 1 : 2
       grantPowerUp(teamWithFewerPowerUps, [availablePowerUps.stealTurn])
       return
     }
     
-    // 30th question - Fourth power-up
-    if (totalQuestions === 30 && gameState.lastPowerUpGranted < 30) {
-      if (scoreDiff >= 800) {
+    // 26th question - Fourth power-up (87% through game)
+    if (totalQuestions === 26 && gameState.lastPowerUpGranted < 26) {
+      if (scoreDiff >= 200) { // Adjusted for diamond values (was 800 points)
         // Give to losing team if big gap
         grantPowerUp(losingTeam, [availablePowerUps.blockQuestion])
       } else {
@@ -321,10 +321,10 @@ export default function GamePage() {
     setCategories(categoriesData || [])
 
     const { data: questionsData, error: questionsError } = await supabase
-      .from("questions")
+      .from("diamond_questions")
       .select("*")
       .in("category_id", allSelectedCategories)
-      .order("points")
+      .order("diamonds", { ascending: false })
 
     if (questionsError) {
       console.error("Error fetching questions:", questionsError)
@@ -340,10 +340,10 @@ export default function GamePage() {
     // Pre-load questions map with unused/used logic - Diamond system
     const map: Record<string, Question[]> = {}
     for (const category of categoriesData || []) {
-      // Map old points to new diamond values: 200->10, 400->25, 600->50
-      for (const [oldPoints, diamonds] of [[200, 10], [400, 25], [600, 50], [75, 75], [100, 100]]) {
+      // Diamond values: 10, 25, 50, 75, 100
+      for (const diamonds of [10, 25, 50, 75, 100]) {
         const key = `${category.id}-${diamonds}`
-        const question = getQuestionForCategoryPoint(category.id, oldPoints, sortedQuestions, usedQuestionIds)
+        const question = getQuestionForCategoryPoint(category.id, diamonds, sortedQuestions, usedQuestionIds)
         map[key] = question ? [question] : []
       }
     }
@@ -448,13 +448,13 @@ export default function GamePage() {
     }
 
     // Apply power-up effects
-    let finalPoints = selectedQuestion.points
+    let finalDiamonds = selectedQuestion.diamonds
     if (activePowerUp?.id === 'double' && powerUpTeam === teamNumber) {
-      finalPoints *= 2
+      finalDiamonds *= 2
     }
 
-    const finalTeam1Score = teamNumber === 1 ? gameState.team1Score + finalPoints : gameState.team1Score
-    const finalTeam2Score = teamNumber === 2 ? gameState.team2Score + finalPoints : gameState.team2Score
+    const finalTeam1Score = teamNumber === 1 ? gameState.team1Score + finalDiamonds : gameState.team1Score
+    const finalTeam2Score = teamNumber === 2 ? gameState.team2Score + finalDiamonds : gameState.team2Score
 
     // Mark as answered in state
     setGameState((prev) => {
@@ -720,7 +720,7 @@ export default function GamePage() {
               <DialogContent className="max-w-4xl w-[95vw]" aria-describedby="question-dialog-description">
                 <DialogHeader>
                   <DialogTitle className="text-center text-xl sm:text-2xl">
-                    {selectedQuestion && `${selectedQuestion.points} ${t("points")}`}
+                    {selectedQuestion && `💎 ${selectedQuestion.diamonds} Diamonds`}
                   </DialogTitle>
                   <DialogDescription className="sr-only">
                     Question and answer dialog for the quiz game
