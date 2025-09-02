@@ -54,6 +54,8 @@ export default function Sidebar() {
     setOpen((prev) => !prev);
   };
 
+
+
   return (
     <>
       {/* Hamburger Menu (Mobile) */}
@@ -71,7 +73,8 @@ export default function Sidebar() {
       {/* Sidebar */}
       <div
         className={clsx(
-          "fixed top-0 left-0 w-16 bg-gray-50 border-r border-gray-200 flex flex-col items-center py-6 space-y-4 z-40 h-screen"
+          "fixed top-0 left-0 w-16 bg-gray-50 border-r border-gray-200 flex flex-col items-center py-6 space-y-4 z-40 h-screen",
+          "hidden md:flex"
         )}
       >
 
@@ -121,12 +124,60 @@ export default function Sidebar() {
         </Button>
       </div>
 
-      {/* Overlay for mobile when menu is open */}
+      {/* Mobile Sidebar Overlay */}
       {open && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-30 z-30 md:hidden"
-          onClick={toggleSidebar}
-        />
+        <div className="fixed inset-0 z-40 md:hidden">
+          <div
+            className="fixed inset-0 bg-black bg-opacity-30"
+            onClick={toggleSidebar}
+          />
+          <div className="fixed top-0 left-0 w-16 bg-gray-50 border-r border-gray-200 flex flex-col items-center py-6 space-y-4 z-50 h-screen">
+            {/* Auth Button - Login or Dashboard */}
+            {user ? (
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => { handleDashboard(); toggleSidebar(); }}
+                  className="w-12 h-12 p-0 hover:bg-gray-100"
+                  title="Admin Dashboard"
+                >
+                  <Settings className="h-5 w-5 text-gray-600" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => { handleLogout(); toggleSidebar(); }}
+                  className="w-12 h-12 p-0 hover:bg-gray-100"
+                  title="Logout"
+                >
+                  <LogOut className="h-5 w-5 text-gray-600" />
+                </Button>
+              </>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => { handleLogin(); toggleSidebar(); }}
+                className="w-12 h-12 p-0 hover:bg-gray-100"
+                title={t("login") ?? "Login"}
+              >
+                <LogIn className="h-5 w-5 text-gray-600" />
+              </Button>
+            )}
+
+            {/* Language Toggle */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { toggleLanguage(); toggleSidebar(); }}
+              className="w-12 h-12 p-0 hover:bg-gray-100"
+              title={t("language") ?? "Language"}
+            >
+              <Globe className="h-5 w-5 text-gray-600" />
+            </Button>
+          </div>
+        </div>
       )}
     </>
   );

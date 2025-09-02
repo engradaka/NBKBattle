@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
-import { SidebarProvider } from "@/components/ui/sidebar"
+
 import { supabase } from "@/lib/supabase"
 import { useLanguage } from "@/lib/language-context"
 import { ArrowLeft, Trophy } from "lucide-react"
@@ -73,7 +73,7 @@ function shuffle<T>(array: T[]): T[] {
   return arr
 }
 
-// Get 1 question per category/diamond value: unused first, then used
+// Get 1 question per category/diamond value with rotation system
 function getQuestionForCategoryPoint(
   categoryId: string,
   diamonds: number,
@@ -83,6 +83,8 @@ function getQuestionForCategoryPoint(
   const questions = allQuestions.filter(
     q => q.category_id === categoryId && q.diamonds === diamonds
   )
+  
+  if (questions.length === 0) return null
   
   // Separate unused and used questions
   const unusedQuestions = questions.filter(q => !usedQuestionIds.includes(q.id))
@@ -134,6 +136,8 @@ export default function GamePage() {
   const router = useRouter()
   const { language, t } = useLanguage()
 
+
+
   // Timer effect
   useEffect(() => {
     let interval: NodeJS.Timeout
@@ -166,20 +170,37 @@ export default function GamePage() {
     }
   }, [timerActive, timeLeft, currentTurn])
 
+  // Load used questions from Supabase
+  const getUsedQuestions = async (): Promise<string[]> => {
+    const { data, error } = await supabase
+      .from('used_questions')
+      .select('question_id')
+      .order('used_at', { ascending: true })
+    
+    if (error) {
+      console.error('Error fetching used questions:', error)
+      return []
+    }
+    
+    return data?.map(item => item.question_id) || []
+  }
+
+  // Save used question to Supabase
+  const saveUsedQuestion = async (questionId: string) => {
+    const { error } = await supabase
+      .from('used_questions')
+      .insert([{ question_id: questionId }])
+    
+    if (error) {
+      console.error('Error saving used question:', error)
+    }
+  }
+
   useEffect(() => {
     initializeGame()
   }, [])
 
-  // Load used questions from localStorage (persistent across games)
-  const getUsedQuestions = (): string[] => {
-    const used = localStorage.getItem('usedQuestionIds')
-    return used ? JSON.parse(used) : []
-  }
 
-  // Save used questions to localStorage
-  const saveUsedQuestions = (usedIds: string[]) => {
-    localStorage.setItem('usedQuestionIds', JSON.stringify(usedIds))
-  }
 
   // Power-up definitions
   const createPowerUp = (id: string, name: string, description: string, icon: string): PowerUp => ({
@@ -337,10 +358,10 @@ export default function GamePage() {
     const sortedQuestions = (questionsData || []).sort((a, b) => a.id.localeCompare(b.id))
     setQuestions(sortedQuestions)
 
-    // Get used questions from localStorage
-    const usedQuestionIds = getUsedQuestions()
+    // Get used questions from Supabase
+    const usedQuestionIds = await getUsedQuestions()
     
-    // Pre-load questions map with unused/used logic - Diamond system
+    // Pre-load questions map - Diamond system
     const map: Record<string, Question[]> = {}
     for (const category of categoriesData || []) {
       // Diamond values: 10, 25, 50, 75, 100
@@ -363,15 +384,6 @@ export default function GamePage() {
         ...prev,
         answeredQuestions: [...prev.answeredQuestions, question.id]
       }))
-      // Update the rotated questions map to reflect the blocked question
-      const key = `${question.category_id}-${question.points}`
-      setRotatedQuestionsMap(prev => {
-        const updated = { ...prev }
-        if (updated[key]) {
-          updated[key] = updated[key].filter(q => q.id !== question.id)
-        }
-        return updated
-      })
       setPowerUpMode(null)
       setActivePowerUp(null)
       setPowerUpTeam(null)
@@ -379,16 +391,17 @@ export default function GamePage() {
     }
     
     if (powerUpMode === 'swap') {
-      // Replace with different question of same points
-      const samePointQuestions = questions.filter(q => 
-        q.points === question.points && 
+      // Replace with different question of same category and same diamonds
+      const sameDiamondQuestions = questions.filter(q => 
+        q.category_id === question.category_id &&
+        q.diamonds === question.diamonds && 
         q.id !== question.id &&
         !gameState.answeredQuestions.includes(q.id)
       )
-      if (samePointQuestions.length > 0) {
-        const randomQuestion = samePointQuestions[Math.floor(Math.random() * samePointQuestions.length)]
+      if (sameDiamondQuestions.length > 0) {
+        const randomQuestion = sameDiamondQuestions[Math.floor(Math.random() * sameDiamondQuestions.length)]
         // Update the rotated questions map
-        const key = `${question.category_id}-${question.points}`
+        const key = `${question.category_id}-${question.diamonds}`
         setRotatedQuestionsMap(prev => {
           const updated = { ...prev }
           if (updated[key]) {
@@ -411,6 +424,10 @@ export default function GamePage() {
     setTimerActive(true)
   }
 
+
+
+
+
   const handleShowAnswer = () => {
     setShowAnswer(true)
     setTimerActive(false)
@@ -419,9 +436,14 @@ export default function GamePage() {
   const handleAnswerResult = (teamNumber: number) => {
     if (!selectedQuestion) return
 
-    // Update score
-    const newTeam1Score = teamNumber === 1 ? gameState.team1Score + selectedQuestion.points : gameState.team1Score
-    const newTeam2Score = teamNumber === 2 ? gameState.team2Score + selectedQuestion.points : gameState.team2Score
+    // Apply power-up effects
+    let finalDiamonds = selectedQuestion.diamonds
+    if (activePowerUp?.id === 'double' && powerUpTeam === teamNumber) {
+      finalDiamonds *= 2
+    }
+
+    const finalTeam1Score = teamNumber === 1 ? gameState.team1Score + finalDiamonds : gameState.team1Score
+    const finalTeam2Score = teamNumber === 2 ? gameState.team2Score + finalDiamonds : gameState.team2Score
 
     // Update consecutive counters
     const updateConsecutive = (prev: GameState) => {
@@ -430,7 +452,7 @@ export default function GamePage() {
           ...prev,
           team1ConsecutiveRight: prev.team1ConsecutiveRight + 1,
           team1ConsecutiveWrong: 0,
-          team2ConsecutiveWrong: prev.team2ConsecutiveWrong + (teamNumber === 2 ? 0 : 1)
+          team2ConsecutiveWrong: prev.team2ConsecutiveWrong + 1
         }
       } else if (teamNumber === 2) {
         return {
@@ -450,15 +472,6 @@ export default function GamePage() {
       }
     }
 
-    // Apply power-up effects
-    let finalDiamonds = selectedQuestion.diamonds
-    if (activePowerUp?.id === 'double' && powerUpTeam === teamNumber) {
-      finalDiamonds *= 2
-    }
-
-    const finalTeam1Score = teamNumber === 1 ? gameState.team1Score + finalDiamonds : gameState.team1Score
-    const finalTeam2Score = teamNumber === 2 ? gameState.team2Score + finalDiamonds : gameState.team2Score
-
     // Mark as answered in state
     setGameState((prev) => {
       const updated = updateConsecutive(prev)
@@ -470,12 +483,8 @@ export default function GamePage() {
       }
     })
 
-    // Mark question as used and save to localStorage
-    const usedQuestionIds = getUsedQuestions()
-    if (!usedQuestionIds.includes(selectedQuestion.id)) {
-      const newUsedIds = [...usedQuestionIds, selectedQuestion.id]
-      saveUsedQuestions(newUsedIds)
-    }
+    // Save question as used in Supabase
+    saveUsedQuestion(selectedQuestion.id)
 
     // Reset timer and close dialog
     setTimerActive(false)
@@ -528,10 +537,8 @@ export default function GamePage() {
   }
 
   return (
-    <div className="flex min-h-screen bg-white">
-      <SidebarProvider>
-        <main className="flex-1 p-4 sm:p-8 md:ml-16">
-          <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-white p-4 sm:p-8">
+      <div className="max-w-7xl mx-auto">
             {/* Turn Indicator */}
             <div className="text-center mb-4">
               <div className="inline-flex items-center px-4 py-2 bg-blue-100 rounded-lg">
@@ -807,8 +814,8 @@ export default function GamePage() {
                         {getQuestionText(selectedQuestion)}
                       </p>
                       
-                      {/* Media Content */}
-                      {selectedQuestion.media_url && (
+                      {/* Media Content - Only show when answer is not revealed */}
+                      {selectedQuestion.media_url && !showAnswer && (
                         <div className="mt-4">
                           {selectedQuestion.question_type === 'image' && (
                             <div className="flex justify-center">
@@ -816,7 +823,7 @@ export default function GamePage() {
                                 src={selectedQuestion.media_url}
                                 alt="Question image"
                                 width={400}
-                                height={300}
+                                height={0}
                                 className="rounded-lg object-cover max-w-full h-auto"
                               />
                             </div>
@@ -827,8 +834,7 @@ export default function GamePage() {
                               <video
                                 src={selectedQuestion.media_url}
                                 controls
-                                className="rounded-lg max-w-full h-auto"
-                                style={{ maxHeight: '300px' }}
+                                className="rounded-lg max-w-full h-auto max-h-48 md:max-h-64"
                               >
                                 Your browser does not support the video tag.
                               </video>
@@ -849,8 +855,6 @@ export default function GamePage() {
                         </div>
                       )}
                     </div>
-
-
 
                     {/* Answer */}
                     {showAnswer && (
@@ -876,7 +880,7 @@ export default function GamePage() {
                                   src={selectedQuestion.answer_media_url}
                                   alt="Answer image"
                                   width={400}
-                                  height={300}
+                                  height={0}
                                   className="rounded-lg object-cover max-w-full h-auto"
                                 />
                               </div>
@@ -888,8 +892,7 @@ export default function GamePage() {
                                   src={selectedQuestion.answer_media_url}
                                   controls
                                   autoPlay
-                                  className="rounded-lg max-w-full h-auto"
-                                  style={{ maxHeight: '400px' }}
+                                  className="rounded-lg max-w-full h-auto max-h-48 md:max-h-64"
                                 >
                                   Your browser does not support the video tag.
                                 </video>
@@ -962,9 +965,7 @@ export default function GamePage() {
                 )}
               </DialogContent>
             </Dialog>
-          </div>
-        </main>
-      </SidebarProvider>
+      </div>
     </div>
   )
 }

@@ -45,14 +45,14 @@ export default function HomePage() {
       />
       
       {/* NBK Logo - Top Right */}
-      <div className="absolute top-6 right-6 z-20">
+      <div className="absolute top-4 right-4 md:top-6 md:right-6 z-20">
         <Image
           src="/nbk-logo.png"
           alt="NBK Logo"
           width={150}
           height={60}
           priority
-          className="w-[150px] h-[60px]"
+          className="w-20 md:w-28 lg:w-36 h-auto"
         />
       </div>
       
@@ -68,7 +68,7 @@ export default function HomePage() {
                 width={300}
                 height={300}
                 priority
-                className="w-[500px] h-[300px] mx-auto"
+                className="w-48 md:w-64 lg:w-80 h-auto mx-auto"
               />
             </div>
             
