@@ -135,7 +135,7 @@ export default function ResultsPage() {
                   <div
                     className={`text-center p-4 md:p-6 rounded-lg transform transition-all ${
                       winner === 1 
-                        ? "bg-gradient-to-br from-green-100 to-blue-100 ring-2 md:ring-4 ring-blue-400 md:scale-105 shadow-lg" 
+                        ? "bg-gradient-to-br from-blue-100 to-blue-100 ring-2 md:ring-4 ring-blue-400 md:scale-105 shadow-lg" 
                         : "bg-gradient-to-br from-gray-100 to-gray-200"
                     }`}
                   >
