@@ -91,7 +91,7 @@ export default function HomePage() {
         {/* Footer */}
         <footer className="relative z-10 py-4 text-center">
           <p className="text-sm text-gray-500">
-            © {new Date().getFullYear()} NBK. All rights reserved.
+            © {new Date().getFullYear()} NBK. Digital Channel. All rights reserved.
           </p>
         </footer>
       </div>
