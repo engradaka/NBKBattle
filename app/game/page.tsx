@@ -214,67 +214,84 @@ export default function GamePage() {
     blockQuestion: createPowerUp('block', 'Block Question', 'Click any question to eliminate it', '🚫')
   }
 
-  // Check and grant power-ups - GUARANTEED AT SPECIFIC QUESTIONS (Diamond System - 30 total questions)
+  // Check and grant power-ups - FAIR SYSTEM: Both teams get same power-up at same time
   const checkPowerUpTriggers = () => {
-    const scoreDiff = Math.abs(gameState.team1Score - gameState.team2Score)
-    const losingTeam = gameState.team1Score < gameState.team2Score ? 1 : 2
     const totalQuestions = gameState.answeredQuestions.length
     
-    // GUARANTEED POWER-UPS AT SPECIFIC QUESTION NUMBERS (Adjusted for 30 questions total)
+    // GUARANTEED POWER-UPS AT SPECIFIC QUESTION NUMBERS - BOTH TEAMS GET SAME POWER-UP
     
-    // 9th question - First power-up (30% through game)
+    // 9th question - First power-up: Question Swap for both teams
     if (totalQuestions === 9 && gameState.lastPowerUpGranted < 9) {
-      const teamWithFewerPowerUps = gameState.team1PowerUps.length <= gameState.team2PowerUps.length ? 1 : 2
-      grantPowerUp(teamWithFewerPowerUps, [availablePowerUps.questionSwap])
+      grantPowerUpToBothTeams([availablePowerUps.questionSwap])
       return
     }
     
-    // 15th question - Second power-up (50% through game)
+    // 15th question - Second power-up: Double Points for both teams
     if (totalQuestions === 15 && gameState.lastPowerUpGranted < 15) {
-      if (scoreDiff >= 150) { // Adjusted for diamond values (was 600 points)
-        // Give to losing team if there's a gap
-        grantPowerUp(losingTeam, [availablePowerUps.doublePoints])
-      } else {
-        // Give to team with fewer power-ups if close game
-        const teamWithFewerPowerUps = gameState.team1PowerUps.length <= gameState.team2PowerUps.length ? 1 : 2
-        grantPowerUp(teamWithFewerPowerUps, [availablePowerUps.doublePoints])
-      }
+      grantPowerUpToBothTeams([availablePowerUps.doublePoints])
       return
     }
     
-    // 21st question - Third power-up (70% through game)
+    // 21st question - Third power-up: Block Question for both teams
     if (totalQuestions === 21 && gameState.lastPowerUpGranted < 21) {
-      const teamWithFewerPowerUps = gameState.team1PowerUps.length <= gameState.team2PowerUps.length ? 1 : 2
-      grantPowerUp(teamWithFewerPowerUps, [availablePowerUps.stealTurn])
-      return
-    }
-    
-    // 26th question - Fourth power-up (87% through game)
-    if (totalQuestions === 26 && gameState.lastPowerUpGranted < 26) {
-      if (scoreDiff >= 200) { // Adjusted for diamond values (was 800 points)
-        // Give to losing team if big gap
-        grantPowerUp(losingTeam, [availablePowerUps.blockQuestion])
-      } else {
-        // Give to team with fewer power-ups
-        const teamWithFewerPowerUps = gameState.team1PowerUps.length <= gameState.team2PowerUps.length ? 1 : 2
-        grantPowerUp(teamWithFewerPowerUps, [availablePowerUps.blockQuestion])
-      }
+      grantPowerUpToBothTeams([availablePowerUps.blockQuestion])
       return
     }
   }
 
-  // Grant power-up to team(s) - ensure no duplicates and max 3 per team
+  // Grant power-up to both teams - FAIR SYSTEM
+  const grantPowerUpToBothTeams = (powerUps: PowerUp[]) => {
+    setGameState(prev => {
+      const newState = { ...prev }
+      
+      powerUps.forEach(powerUp => {
+        // Check if teams don't already have this power-up and have space
+        const team1HasPowerUp = newState.team1PowerUps.find(p => p.id === powerUp.id)
+        const team2HasPowerUp = newState.team2PowerUps.find(p => p.id === powerUp.id)
+        
+        // Grant to Team 1 if they don't have it and have space
+        if (!team1HasPowerUp && newState.team1PowerUps.length < 4) {
+          newState.team1PowerUps = [...newState.team1PowerUps, { ...powerUp }]
+        }
+        
+        // Grant to Team 2 if they don't have it and have space
+        if (!team2HasPowerUp && newState.team2PowerUps.length < 4) {
+          newState.team2PowerUps = [...newState.team2PowerUps, { ...powerUp }]
+        }
+        
+        newState.lastPowerUpGranted = newState.answeredQuestions.length // Update cooldown
+      })
+      
+      // Play power-up sound
+      const audio = new Audio('/sounds/powerup.mp3')
+      audio.volume = 0.6
+      audio.play().catch(e => console.log('Audio play failed:', e))
+      
+      // Show animation for both teams
+      if (powerUps.length > 0) {
+        setShowPowerUpAnimation({ powerUp: powerUps[0], team: 1 })
+        
+        // Hide animation after 3 seconds
+        setTimeout(() => {
+          setShowPowerUpAnimation(null)
+        }, 3000)
+      }
+      
+      return newState
+    })
+  }
+
+  // Grant power-up to single team (keep for backward compatibility)
   const grantPowerUp = (team: 1 | 2, powerUps: PowerUp[]) => {
     setGameState(prev => {
       const newState = { ...prev }
       
       powerUps.forEach(powerUp => {
-        // Check if team already has 3 power-ups or already has this power-up
+        // Check if team already has 4 power-ups or already has this power-up
         const teamPowerUps = newState[`team${team}PowerUps`]
-        const existsOnTeam1 = newState.team1PowerUps.find(p => p.id === powerUp.id)
-        const existsOnTeam2 = newState.team2PowerUps.find(p => p.id === powerUp.id)
+        const existsOnTeam = teamPowerUps.find(p => p.id === powerUp.id)
         
-        if (teamPowerUps.length < 3 && !existsOnTeam1 && !existsOnTeam2) {
+        if (teamPowerUps.length < 4 && !existsOnTeam) {
           newState[`team${team}PowerUps`] = [...teamPowerUps, { ...powerUp }]
           newState.lastPowerUpGranted = newState.answeredQuestions.length // Update cooldown
           
@@ -537,33 +554,38 @@ export default function GamePage() {
   }
 
   return (
-    <div className="min-h-screen bg-white p-4 sm:p-8">
+    <div className="min-h-screen bg-white p-4 sm:p-8" style={{
+      backgroundImage: 'url(/JW.png)',
+      backgroundSize: 'contain',
+      backgroundPosition: 'top center',
+      backgroundRepeat: 'no-repeat',
+      backgroundOpacity: 0.1
+    }}>
       <div className="max-w-7xl mx-auto">
-            {/* Turn Indicator */}
-            <div className="text-center mb-4">
-              <div className="inline-flex items-center px-4 py-2 bg-blue-100 rounded-lg">
-                <span className="text-lg font-bold text-blue-800">
-                  {language === 'ar' ? (
-                    <>
-                      <span dir="ltr">{gameState[`team${nextQuestionTurn}Name`]}</span> :السؤال التالي: دور فريق
-                    </>
-                  ) : (
-                    <>Next Question: {gameState[`team${nextQuestionTurn}Name`]}'s Turn</>
-                  )}
-                </span>
+            {/* Combined Header - Turn Indicator and Teams */}
+            <div className="flex justify-between items-center mb-2 sm:mb-3">
+              {/* Turn Indicator - Center */}
+              <div className="absolute left-1/2 transform -translate-x-1/2">
+                <div className="inline-flex items-center px-4 py-2 bg-blue-100 rounded-lg">
+                  <span className="text-lg font-bold text-blue-800">
+                    {language === 'ar' ? (
+                      <>
+                        <span dir="ltr">{gameState[`team${nextQuestionTurn}Name`]}</span> :السؤال التالي: دور فريق
+                      </>
+                    ) : (
+                      <>Next Question: {gameState[`team${nextQuestionTurn}Name`]}'s Turn</>
+                    )}
+                  </span>
+                </div>
               </div>
-            </div>
-
-            {/* Game Header */}
-            <div className="flex justify-between items-start mb-6 sm:mb-8">
               {/* Team 1 */}
               <div className="text-center">
-                <div className={`p-3 rounded-lg border-2 ${nextQuestionTurn === 1 ? 'bg-blue-50 border-blue-300' : 'bg-gray-50 border-gray-300'}`}>
+                <div className={`p-2 rounded-lg border-2 ${nextQuestionTurn === 1 ? 'bg-blue-50 border-blue-300' : 'bg-gray-50 border-gray-300'}`}>
                   <h2 className={`text-lg sm:text-xl font-bold ${nextQuestionTurn === 1 ? 'text-blue-600' : 'text-gray-900'}`}>
                     {gameState.team1Name}
                   </h2>
                   <Badge variant="outline" className="text-lg sm:text-xl mt-2 px-3 py-1">
-                    {gameState.team1Score} pts
+                    💎 {gameState.team1Score}
                   </Badge>
                 </div>
                 {/* Team 1 Power-ups */}
@@ -588,12 +610,12 @@ export default function GamePage() {
 
               {/* Team 2 */}
               <div className="text-center">
-                <div className={`p-3 rounded-lg border-2 ${nextQuestionTurn === 2 ? 'bg-blue-50 border-blue-300' : 'bg-gray-50 border-gray-300'}`}>
+                <div className={`p-2 rounded-lg border-2 ${nextQuestionTurn === 2 ? 'bg-blue-50 border-blue-300' : 'bg-gray-50 border-gray-300'}`}>
                   <h2 className={`text-lg sm:text-xl font-bold ${nextQuestionTurn === 2 ? 'text-blue-600' : 'text-gray-900'}`}>
                     {gameState.team2Name}
                   </h2>
                   <Badge variant="outline" className="text-lg sm:text-xl mt-2 px-3 py-1">
-                    {gameState.team2Score} pts
+                    💎 {gameState.team2Score}
                   </Badge>
                 </div>
                 {/* Team 2 Power-ups */}
@@ -637,7 +659,7 @@ export default function GamePage() {
                             variant="outline"
                             disabled={isAnswered || !question}
                             onClick={() => question && handleQuestionClick(question)}
-                            className="w-full h-16 sm:h-20 text-base sm:text-lg font-bold rounded-none border-gray-200 hover:bg-blue-50 disabled:bg-gray-100 disabled:text-gray-400 flex items-center justify-center gap-2"
+                            className="w-full h-10 sm:h-12 text-base sm:text-lg font-bold rounded-none border-gray-200 hover:bg-blue-50 disabled:bg-gray-100 disabled:text-gray-400 flex items-center justify-center gap-2"
                           >
                             {isAnswered ? (
                               <span className="text-green-600">✓</span>

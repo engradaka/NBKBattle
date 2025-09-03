@@ -306,7 +306,7 @@ export default function CategoryQuestionsPage() {
       {/* Header */}
       <header className="bg-white border-b border-gray-200 px-3 sm:px-4 md:px-6 py-3 sm:py-4">
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-center gap-2 sm:gap-4 mb-3 sm:mb-4">
+          <div className="flex items-center gap-2 sm:gap-4 mb-3 sm:mb-4 md:hidden mt-12">
             <Button onClick={() => router.push("/dashboard")} variant="outline" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
               <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4" />
               <span className="hidden sm:inline">Back to Dashboard</span>
@@ -314,8 +314,15 @@ export default function CategoryQuestionsPage() {
             </Button>
           </div>
 
+          <div className="hidden md:flex items-center gap-4 mb-4">
+            <Button onClick={() => router.push("/dashboard")} variant="outline" className="flex items-center gap-2 text-sm">
+              <ArrowLeft className="w-4 h-4" />
+              Back to Dashboard
+            </Button>
+          </div>
+
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-0">
-            <div className="flex-1">
+            <div className="flex-1 text-center sm:text-left">
               <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 break-words">{getCategoryName(category)} Questions</h1>
               <p className="text-xs sm:text-sm md:text-base text-gray-600 mt-1">
                 <span className="block sm:inline">Manage questions for {getCategoryName(category)}</span>

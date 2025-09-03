@@ -345,12 +345,12 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <header className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center sm:items-center justify-between gap-3 sm:gap-4">
           <div className="flex items-center gap-3 sm:gap-4">
             <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-500 rounded-xl flex items-center justify-center">
               <Settings className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
             </div>
-            <div>
+            <div className="text-center sm:text-left">
               <h1 className="text-lg sm:text-xl font-bold text-gray-900">Quiz Admin Dashboard</h1>
               <p className="text-xs sm:text-sm text-gray-600">Manage categories, questions, and game settings</p>
             </div>
