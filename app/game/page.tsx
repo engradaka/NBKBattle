@@ -647,7 +647,7 @@ export default function GamePage() {
                   <CardContent className="p-0">
                     {/* Single Column - Diamond Levels */}
                     <div className="space-y-0">
-                      {[100, 75, 50, 25, 10].map((diamonds) => {
+                      {[10, 25, 50, 75, 100].map((diamonds) => {
                         const key = `${category.id}-${diamonds}`
                         const available = rotatedQuestionsMap[key] || []
                         const question = available[0] || null
@@ -666,7 +666,7 @@ export default function GamePage() {
                             ) : (
                               <>
                                 <span className="text-blue-600">💎</span>
-                                <span>{diamonds}</span>
+                                <span className="w-8 text-center">{diamonds}</span>
                               </>
                             )}
                           </Button>
