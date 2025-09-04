@@ -555,11 +555,10 @@ export default function GamePage() {
 
   return (
     <div className="min-h-screen bg-white p-4 sm:p-8" style={{
-      backgroundImage: 'url(/JW.png)',
+      backgroundImage: 'linear-gradient(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.9)), url(/JW.png)',
       backgroundSize: 'contain',
       backgroundPosition: 'top center',
       backgroundRepeat: 'no-repeat',
-      backgroundOpacity: 0.1
     }}>
       <div className="max-w-7xl mx-auto">
             {/* Combined Header - Turn Indicator and Teams */}
@@ -597,7 +596,7 @@ export default function GamePage() {
                       variant={powerUp.used ? "secondary" : (powerUpMode === powerUp.id ? "destructive" : "default")}
                       disabled={powerUp.used}
                       onClick={() => usePowerUp(1, powerUp.id)}
-                      className="text-xs px-2 py-1 h-8"
+                      className="text-lg px-3 py-2 h-10 w-10"
                       title={powerUp.description}
                     >
                       {powerUp.icon}
@@ -627,7 +626,7 @@ export default function GamePage() {
                       variant={powerUp.used ? "secondary" : (powerUpMode === powerUp.id ? "destructive" : "default")}
                       disabled={powerUp.used}
                       onClick={() => usePowerUp(2, powerUp.id)}
-                      className="text-xs px-2 py-1 h-8"
+                      className="text-lg px-3 py-2 h-10 w-10"
                       title={powerUp.description}
                     >
                       {powerUp.icon}
@@ -640,11 +639,21 @@ export default function GamePage() {
             {/* Game Board - Diamond System */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
               {categories.map((category) => (
-                <Card key={category.id} className="overflow-hidden">
-                  <CardHeader className="bg-blue-800 text-white text-center py-4">
+                <Card key={category.id} className="overflow-hidden relative">
+                  <CardHeader className="bg-blue-800 text-white text-center py-4 relative z-10">
                     <CardTitle className="text-lg sm:text-xl font-bold">{getCategoryName(category)}</CardTitle>
                   </CardHeader>
-                  <CardContent className="p-0">
+                  <CardContent className="p-0 relative" style={{
+                    backgroundImage: category.image_url ? `url(${category.image_url})` : 'none',
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    backgroundRepeat: 'no-repeat'
+                  }}>
+                    {/* Reduce image opacity with overlay */}
+                    {category.image_url && (
+                      <div className="absolute inset-0 bg-white/80"></div>
+                    )}
+
                     {/* Single Column - Diamond Levels */}
                     <div className="space-y-0">
                       {[10, 25, 50, 75, 100].map((diamonds) => {
@@ -659,7 +668,7 @@ export default function GamePage() {
                             variant="outline"
                             disabled={isAnswered || !question}
                             onClick={() => question && handleQuestionClick(question)}
-                            className="w-full h-10 sm:h-12 text-base sm:text-lg font-bold rounded-none border-gray-200 hover:bg-blue-50 disabled:bg-gray-100 disabled:text-gray-400 flex items-center justify-center gap-2"
+                            className="w-full h-10 sm:h-12 text-base sm:text-lg font-bold rounded-none border-gray-200 hover:bg-blue-50/80 disabled:bg-gray-100/80 disabled:text-gray-400 flex items-center justify-center gap-2 relative z-10 bg-white/85 ckdrop-blur-sm"
                           >
                             {isAnswered ? (
                               <span className="text-green-600">✓</span>
