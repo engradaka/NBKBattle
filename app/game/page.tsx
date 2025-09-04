@@ -561,8 +561,79 @@ export default function GamePage() {
       backgroundRepeat: 'no-repeat',
     }}>
       <div className="max-w-7xl mx-auto">
-            {/* Combined Header - Turn Indicator and Teams */}
-            <div className="flex justify-between items-center mb-2 sm:mb-3">
+            {/* Mobile Layout */}
+            <div className="block sm:hidden mb-4">
+              {/* Turn Indicator */}
+              <div className="text-center mb-3">
+                <div className="inline-flex items-center px-3 py-1 bg-blue-100 rounded-lg">
+                  <span className="text-sm font-bold text-blue-800">
+                    Turn: {gameState[`team${nextQuestionTurn}Name`]}
+                  </span>
+                </div>
+              </div>
+              
+              {/* Teams Row */}
+              <div className="grid grid-cols-2 gap-2">
+                {/* Team 1 */}
+                <div className="text-center">
+                  <div className={`p-1 rounded border ${nextQuestionTurn === 1 ? 'bg-blue-50 border-blue-300' : 'bg-gray-50 border-gray-300'}`}>
+                    <h2 className={`text-xs font-bold truncate ${nextQuestionTurn === 1 ? 'text-blue-600' : 'text-gray-900'}`}>
+                      {gameState.team1Name}
+                    </h2>
+                    <div className="text-xs font-bold">
+                      💎 {gameState.team1Score}
+                    </div>
+                  </div>
+                  {/* Team 1 Power-ups */}
+                  <div className="flex gap-1 mt-1 justify-center">
+                    {gameState.team1PowerUps.map((powerUp) => (
+                      <Button
+                        key={powerUp.id}
+                        size="sm"
+                        variant={powerUp.used ? "secondary" : (powerUpMode === powerUp.id ? "destructive" : "default")}
+                        disabled={powerUp.used}
+                        onClick={() => usePowerUp(1, powerUp.id)}
+                        className="text-sm px-2 py-1 h-8 w-8"
+                        title={powerUp.description}
+                      >
+                        {powerUp.icon}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Team 2 */}
+                <div className="text-center">
+                  <div className={`p-1 rounded border ${nextQuestionTurn === 2 ? 'bg-blue-50 border-blue-300' : 'bg-gray-50 border-gray-300'}`}>
+                    <h2 className={`text-xs font-bold truncate ${nextQuestionTurn === 2 ? 'text-blue-600' : 'text-gray-900'}`}>
+                      {gameState.team2Name}
+                    </h2>
+                    <div className="text-xs font-bold">
+                      💎 {gameState.team2Score}
+                    </div>
+                  </div>
+                  {/* Team 2 Power-ups */}
+                  <div className="flex gap-1 mt-1 justify-center">
+                    {gameState.team2PowerUps.map((powerUp) => (
+                      <Button
+                        key={powerUp.id}
+                        size="sm"
+                        variant={powerUp.used ? "secondary" : (powerUpMode === powerUp.id ? "destructive" : "default")}
+                        disabled={powerUp.used}
+                        onClick={() => usePowerUp(2, powerUp.id)}
+                        className="text-sm px-2 py-1 h-8 w-8"
+                        title={powerUp.description}
+                      >
+                        {powerUp.icon}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Desktop Layout */}
+            <div className="hidden sm:flex justify-between items-center mb-2 sm:mb-3">
               {/* Turn Indicator - Center */}
               <div className="absolute left-1/2 transform -translate-x-1/2">
                 <div className="inline-flex items-center px-4 py-2 bg-blue-100 rounded-lg">
@@ -579,13 +650,13 @@ export default function GamePage() {
               </div>
               {/* Team 1 */}
               <div className="text-center">
-                <div className={`p-2 rounded-lg border-2 ${nextQuestionTurn === 1 ? 'bg-blue-50 border-blue-300' : 'bg-gray-50 border-gray-300'}`}>
+                <div className={`p-1 sm:p-2 rounded-lg border-2 ${nextQuestionTurn === 1 ? 'bg-blue-50 border-blue-300' : 'bg-gray-50 border-gray-300'}`}>
                   <h2 className={`text-lg sm:text-xl font-bold ${nextQuestionTurn === 1 ? 'text-blue-600' : 'text-gray-900'}`}>
                     {gameState.team1Name}
                   </h2>
-                  <Badge variant="outline" className="text-lg sm:text-xl mt-2 px-3 py-1">
+                  <div className="text-sm sm:text-lg md:text-xl mt-1 sm:mt-2 font-bold">
                     💎 {gameState.team1Score}
-                  </Badge>
+                  </div>
                 </div>
                 {/* Team 1 Power-ups */}
                 <div className="flex flex-wrap gap-1 mt-2 justify-center">
@@ -605,17 +676,15 @@ export default function GamePage() {
                 </div>
               </div>
 
-
-
               {/* Team 2 */}
               <div className="text-center">
-                <div className={`p-2 rounded-lg border-2 ${nextQuestionTurn === 2 ? 'bg-blue-50 border-blue-300' : 'bg-gray-50 border-gray-300'}`}>
+                <div className={`p-1 sm:p-2 rounded-lg border-2 ${nextQuestionTurn === 2 ? 'bg-blue-50 border-blue-300' : 'bg-gray-50 border-gray-300'}`}>
                   <h2 className={`text-lg sm:text-xl font-bold ${nextQuestionTurn === 2 ? 'text-blue-600' : 'text-gray-900'}`}>
                     {gameState.team2Name}
                   </h2>
-                  <Badge variant="outline" className="text-lg sm:text-xl mt-2 px-3 py-1">
+                  <div className="text-sm sm:text-lg md:text-xl mt-1 sm:mt-2 font-bold">
                     💎 {gameState.team2Score}
-                  </Badge>
+                  </div>
                 </div>
                 {/* Team 2 Power-ups */}
                 <div className="flex flex-wrap gap-1 mt-2 justify-center">

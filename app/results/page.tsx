@@ -55,7 +55,7 @@ export default function ResultsPage() {
       
       <main className="flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 relative z-10 min-h-screen">
         {/* Diamond Animation - Fixed Position */}
-        <div className="absolute top-20 left-1/2 transform -translate-x-1/2">
+        <div className="absolute top-32 sm:top-20 left-1/2 transform -translate-x-1/2">
           <Image
             src="/diamond.webp"
             alt="Diamond"
