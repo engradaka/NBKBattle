@@ -36,7 +36,12 @@ export default function LoginPage() {
       if (error) {
         setError(error.message)
       } else {
-        router.push("/dashboard")
+        // Route based on email
+        if (email === 'engradaka@gmail.com') {
+          router.push("/master-dashboard")
+        } else {
+          router.push("/dashboard")
+        }
       }
     } catch (err) {
       console.error('Login error:', err)
@@ -49,6 +54,8 @@ export default function LoginPage() {
   const handleBack = () => {
     router.push("/")
   }
+
+
 
   return (
     <div className="flex min-h-screen bg-white">
@@ -133,8 +140,12 @@ export default function LoginPage() {
                     {loading ? "Signing In..." : "Sign In"}
                   </Button>
                 </form>
+
+
               </CardContent>
             </Card>
+
+
           </div>
         </main>
       </SidebarProvider>

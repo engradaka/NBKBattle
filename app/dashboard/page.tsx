@@ -28,6 +28,8 @@ import {
   ImageIcon,
   Search,
   X,
+  Users,
+  Activity,
 } from "lucide-react"
 import Image from "next/image"
 
@@ -357,6 +359,16 @@ export default function DashboardPage() {
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
+            {user?.email === 'engradaka@gmail.com' && (
+              <Button
+                onClick={() => router.push('/master-dashboard')}
+                variant="outline"
+                className="flex-1 sm:flex-none border-purple-200 hover:bg-purple-50 rounded-xl bg-transparent text-xs sm:text-sm text-purple-600"
+              >
+                <Settings className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                Master Dashboard
+              </Button>
+            )}
             <Button
               onClick={handleViewQuiz}
               variant="outline"
