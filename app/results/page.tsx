@@ -74,7 +74,7 @@ export default function ResultsPage() {
       
       <main className="flex items-center justify-center p-4 sm:p-6 md:p-8 relative z-10 min-h-screen">
         <Card className="w-full max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg shadow-2xl border-2 md:border-4 border-yellow-300">
-            <CardHeader className="text-center py-3 md:py-6 bg-gradient-to-r from-blue-100 to-orange-100">
+            <CardHeader className="text-center py-3 md:py-6 bg-gradient-to-r from-yellow-100 to-orange-100">
               <div className="flex justify-center mb-4 md:mb-6 relative">
                 {winner === 0 ? (
                   <div className="relative">
@@ -141,7 +141,7 @@ export default function ResultsPage() {
                   >
                     <h4 className="text-base md:text-lg font-semibold break-words">{team1Name}</h4>
                     <Badge variant="outline" className={`text-lg md:text-2xl font-bold mt-2 ${
-                      winner === 1 ? 'bg-green-200 text-blue-800' : ''
+                      winner === 1 ? 'bg-blue-200 text-blue-800' : ''
                     }`}>
                       {team1Score} 🎯
                     </Badge>
