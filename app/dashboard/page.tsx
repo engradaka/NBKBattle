@@ -15,6 +15,7 @@ import type { User } from "@supabase/supabase-js"
 import { v4 as uuidv4 } from 'uuid';
 
 import { useLanguage } from "@/lib/language-context"
+import { logActivity } from "@/lib/activity-logger"
 import {
   Settings,
   ExternalLink,
@@ -62,6 +63,7 @@ export default function DashboardPage() {
     totalPoints: 0,
   })
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isQuestionDialogOpen, setIsQuestionDialogOpen] = useState(false)
   const [editingCategory, setEditingCategory] = useState<Category | null>(null)
   const [formData, setFormData] = useState({
     name_ar: "",
@@ -70,6 +72,24 @@ export default function DashboardPage() {
     description_en: "",
     image_url: "",
   })
+  const [questionFormData, setQuestionFormData] = useState({
+    category_id: "",
+    question_ar: "",
+    question_en: "",
+    answer_ar: "",
+    answer_en: "",
+    diamonds: "",
+    question_type: "text" as 'text' | 'video' | 'image' | 'audio',
+    media_url: "",
+    media_duration: 5,
+    answer_type: "text" as 'text' | 'video' | 'image' | 'audio',
+    answer_media_url: "",
+    answer_media_duration: 5
+  })
+  const [selectedQuestionMedia, setSelectedQuestionMedia] = useState<File | null>(null)
+  const [questionMediaPreview, setQuestionMediaPreview] = useState<string>("")
+  const [selectedAnswerMedia, setSelectedAnswerMedia] = useState<File | null>(null)
+  const [answerMediaPreview, setAnswerMediaPreview] = useState<string>("")
   const router = useRouter()
   const { language } = useLanguage()
 
@@ -82,20 +102,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     checkUser()
-    
-    // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_OUT' || !session) {
-        setUser(null)
-        router.push('/login')
-      } else if (session?.user) {
-        setUser(session.user)
-        setLoading(false)
-      }
-    })
-
-    return () => subscription.unsubscribe()
-  }, [router])
+  }, [])
 
   useEffect(() => {
     if (user) {
@@ -180,7 +187,39 @@ export default function DashboardPage() {
   }
 
   const handleLogout = async () => {
-    await supabase.auth.signOut()
+    // Update logout time and calculate session duration
+    if (user?.email) {
+      try {
+        // Get the most recent login for this user
+        const { data: recentLogin } = await supabase
+          .from('login_logs')
+          .select('id, login_time')
+          .eq('admin_email', user.email)
+          .is('logout_time', null)
+          .order('login_time', { ascending: false })
+          .limit(1)
+          .single()
+
+        if (recentLogin) {
+          const logoutTime = new Date()
+          const loginTime = new Date(recentLogin.login_time)
+          const durationMinutes = Math.round((logoutTime.getTime() - loginTime.getTime()) / (1000 * 60))
+
+          await supabase
+            .from('login_logs')
+            .update({
+              logout_time: logoutTime.toISOString(),
+              session_duration: durationMinutes
+            })
+            .eq('id', recentLogin.id)
+        }
+      } catch (error) {
+        console.log('Logout logging failed:', error)
+      }
+    }
+
+    localStorage.clear()
+    setUser(null)
     router.push("/")
   }
 
@@ -245,14 +284,34 @@ export default function DashboardPage() {
         console.error("Error updating category:", error)
         return
       }
+
+      // Log activity
+      await logActivity(
+        user?.email || '',
+        'update',
+        'category',
+        editingCategory.id,
+        formData.name_en || formData.name_ar,
+        { changes: categoryData }
+      )
     } else {
       // Create new category
-      const { error } = await supabase.from("categories").insert([categoryData])
+      const { data, error } = await supabase.from("categories").insert([categoryData]).select().single()
 
       if (error) {
         console.error("Error creating category:", error)
         return
       }
+
+      // Log activity
+      await logActivity(
+        user?.email || '',
+        'create',
+        'category',
+        data.id,
+        formData.name_en || formData.name_ar,
+        categoryData
+      )
     }
 
     setIsDialogOpen(false)
@@ -279,11 +338,25 @@ export default function DashboardPage() {
 
   const handleDelete = async (id: string) => {
     if (confirm("Are you sure you want to delete this category? This will also delete all associated questions.")) {
+      // Get category name before deletion
+      const category = categories.find(c => c.id === id)
+      const categoryName = category ? (category.name_en || category.name_ar) : 'Unknown Category'
+      
       const { error } = await supabase.from("categories").delete().eq("id", id)
 
       if (error) {
         console.error("Error deleting category:", error)
       } else {
+        // Log activity
+        await logActivity(
+          user?.email || '',
+          'delete',
+          'category',
+          id,
+          categoryName,
+          { deleted_at: new Date().toISOString() }
+        )
+        
         fetchCategoriesWithStats()
       }
     }
@@ -295,6 +368,136 @@ export default function DashboardPage() {
     setFormData({ name_ar: "", name_en: "", description_ar: "", description_en: "", image_url: "" })
     setSelectedImage(null)
     setImagePreview("")
+  }
+
+  const handleQuestionMediaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setSelectedQuestionMedia(file)
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        setQuestionMediaPreview(e.target?.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const handleAnswerMediaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setSelectedAnswerMedia(file)
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        setAnswerMediaPreview(e.target?.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const handleQuestionSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    let mediaUrl = questionFormData.media_url
+    let answerMediaUrl = questionFormData.answer_media_url
+
+    // Upload question media if selected
+    if (selectedQuestionMedia && questionFormData.question_type !== 'text') {
+      const fileExt = selectedQuestionMedia.name.split(".").pop()
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
+      const filePath = `question-media/${fileName}`
+
+      const { error: uploadError } = await supabase.storage.from("images").upload(filePath, selectedQuestionMedia)
+
+      if (uploadError) {
+        console.error("Error uploading media:", uploadError)
+        alert(`Error uploading media: ${uploadError.message}`)
+        return
+      }
+
+      const { data: { publicUrl } } = supabase.storage.from("images").getPublicUrl(filePath)
+      mediaUrl = publicUrl
+    }
+
+    // Upload answer media if selected
+    if (selectedAnswerMedia && questionFormData.answer_type !== 'text') {
+      const fileExt = selectedAnswerMedia.name.split(".").pop()
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`
+      const filePath = `answer-media/${fileName}`
+
+      const { error: uploadError } = await supabase.storage.from("images").upload(filePath, selectedAnswerMedia)
+
+      if (uploadError) {
+        console.error("Error uploading answer media:", uploadError)
+        alert(`Error uploading answer media: ${uploadError.message}`)
+        return
+      }
+
+      const { data: { publicUrl } } = supabase.storage.from("images").getPublicUrl(filePath)
+      answerMediaUrl = publicUrl
+    }
+
+    const questionData = {
+      category_id: questionFormData.category_id,
+      question_ar: questionFormData.question_ar.trim(),
+      question_en: questionFormData.question_en.trim(),
+      answer_ar: questionFormData.answer_ar.trim(),
+      answer_en: questionFormData.answer_en.trim(),
+      diamonds: parseInt(questionFormData.diamonds),
+      question_type: questionFormData.question_type,
+      answer_type: questionFormData.answer_type,
+      media_url: mediaUrl,
+      answer_media_url: answerMediaUrl,
+      media_duration: questionFormData.media_duration,
+      answer_media_duration: questionFormData.answer_media_duration
+    }
+
+    const { data, error } = await supabase
+      .from("diamond_questions")
+      .insert([questionData])
+      .select()
+      .single()
+
+    if (error) {
+      console.error("Error creating question:", error)
+      alert("Error creating question: " + error.message)
+      return
+    }
+
+    // Log activity
+    await logActivity(
+      user?.email || '',
+      'create',
+      'question',
+      data.id,
+      questionFormData.question_en || questionFormData.question_ar,
+      questionData
+    )
+
+    // Reset form and close dialog
+    setQuestionFormData({
+      category_id: "",
+      question_ar: "",
+      question_en: "",
+      answer_ar: "",
+      answer_en: "",
+      diamonds: "",
+      question_type: "text",
+      media_url: "",
+      media_duration: 5,
+      answer_type: "text",
+      answer_media_url: "",
+      answer_media_duration: 5
+    })
+    setSelectedQuestionMedia(null)
+    setQuestionMediaPreview("")
+    setSelectedAnswerMedia(null)
+    setAnswerMediaPreview("")
+    setIsQuestionDialogOpen(false)
+    
+    // Refresh categories to update question counts
+    fetchCategoriesWithStats()
+    
+    alert("✅ Question added successfully!")
   }
 
   const getCategoryName = (category: Category) => {
@@ -488,7 +691,208 @@ export default function DashboardPage() {
           </div>
         </div>
         
-        <div className="flex justify-end mb-6">
+        <div className="flex justify-end gap-3 mb-6">
+          {/* Add Question Dialog */}
+          <Dialog open={isQuestionDialogOpen} onOpenChange={setIsQuestionDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-green-600 hover:bg-green-700">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Question
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Add New Question</DialogTitle>
+                <DialogDescription>
+                  Create a new question and assign it to a category
+                </DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleQuestionSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="question_category">Category</Label>
+                  <select
+                    id="question_category"
+                    value={questionFormData.category_id}
+                    onChange={(e) => setQuestionFormData({ ...questionFormData, category_id: e.target.value })}
+                    className="w-full p-2 border border-gray-300 rounded-md"
+                    required
+                  >
+                    <option value="">Select a category</option>
+                    {categories.map((category) => (
+                      <option key={category.id} value={category.id}>
+                        {getCategoryName(category)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="question_ar">Arabic Question</Label>
+                    <textarea
+                      id="question_ar"
+                      value={questionFormData.question_ar}
+                      onChange={(e) => setQuestionFormData({ ...questionFormData, question_ar: e.target.value })}
+                      placeholder="Enter Arabic question"
+                      className="w-full p-2 border border-gray-300 rounded-md h-20 resize-none"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="question_en">English Question</Label>
+                    <textarea
+                      id="question_en"
+                      value={questionFormData.question_en}
+                      onChange={(e) => setQuestionFormData({ ...questionFormData, question_en: e.target.value })}
+                      placeholder="Enter English question"
+                      className="w-full p-2 border border-gray-300 rounded-md h-20 resize-none"
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="answer_ar">Arabic Answer</Label>
+                    <textarea
+                      id="answer_ar"
+                      value={questionFormData.answer_ar}
+                      onChange={(e) => setQuestionFormData({ ...questionFormData, answer_ar: e.target.value })}
+                      placeholder="Enter Arabic answer"
+                      className="w-full p-2 border border-gray-300 rounded-md h-20 resize-none"
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="answer_en">English Answer</Label>
+                    <textarea
+                      id="answer_en"
+                      value={questionFormData.answer_en}
+                      onChange={(e) => setQuestionFormData({ ...questionFormData, answer_en: e.target.value })}
+                      placeholder="Enter English answer"
+                      className="w-full p-2 border border-gray-300 rounded-md h-20 resize-none"
+                      required
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="diamonds">Diamond Value</Label>
+                  <select
+                    id="diamonds"
+                    value={questionFormData.diamonds}
+                    onChange={(e) => setQuestionFormData({ ...questionFormData, diamonds: e.target.value })}
+                    className="w-full p-2 border border-gray-300 rounded-md"
+                    required
+                  >
+                    <option value="">Select diamond value</option>
+                    <option value="10">💎 10 Diamonds</option>
+                    <option value="25">💎 25 Diamonds</option>
+                    <option value="50">💎 50 Diamonds</option>
+                    <option value="75">💎 75 Diamonds</option>
+                    <option value="100">💎 100 Diamonds</option>
+                  </select>
+                </div>
+                
+                {/* Question Media */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="question_type">Question Type</Label>
+                    <select
+                      id="question_type"
+                      value={questionFormData.question_type}
+                      onChange={(e) => setQuestionFormData({ ...questionFormData, question_type: e.target.value })}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                    >
+                      <option value="text">Text Only</option>
+                      <option value="image">Image</option>
+                      <option value="video">Video</option>
+                      <option value="audio">Audio</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="answer_type">Answer Type</Label>
+                    <select
+                      id="answer_type"
+                      value={questionFormData.answer_type}
+                      onChange={(e) => setQuestionFormData({ ...questionFormData, answer_type: e.target.value })}
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                    >
+                      <option value="text">Text Only</option>
+                      <option value="image">Image</option>
+                      <option value="video">Video</option>
+                      <option value="audio">Audio</option>
+                    </select>
+                  </div>
+                </div>
+                
+                {/* Question Media Upload */}
+                {questionFormData.question_type !== 'text' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="question_media">Question {questionFormData.question_type}</Label>
+                    <Input
+                      id="question_media"
+                      type="file"
+                      accept={questionFormData.question_type === 'image' ? 'image/*' : questionFormData.question_type === 'video' ? 'video/*' : 'audio/*'}
+                      onChange={handleQuestionMediaChange}
+                    />
+                    {questionMediaPreview && questionFormData.question_type === 'image' && (
+                      <img src={questionMediaPreview} alt="Preview" className="w-32 h-32 object-cover rounded" />
+                    )}
+                    {questionFormData.question_type === 'video' && (
+                      <div className="space-y-2">
+                        <Label htmlFor="media_duration">Duration (seconds)</Label>
+                        <Input
+                          id="media_duration"
+                          type="number"
+                          min="1"
+                          max="300"
+                          value={questionFormData.media_duration}
+                          onChange={(e) => setQuestionFormData({ ...questionFormData, media_duration: parseInt(e.target.value) })}
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                {/* Answer Media Upload */}
+                {questionFormData.answer_type !== 'text' && (
+                  <div className="space-y-2">
+                    <Label htmlFor="answer_media">Answer {questionFormData.answer_type}</Label>
+                    <Input
+                      id="answer_media"
+                      type="file"
+                      accept={questionFormData.answer_type === 'image' ? 'image/*' : questionFormData.answer_type === 'video' ? 'video/*' : 'audio/*'}
+                      onChange={handleAnswerMediaChange}
+                    />
+                    {answerMediaPreview && questionFormData.answer_type === 'image' && (
+                      <img src={answerMediaPreview} alt="Answer Preview" className="w-32 h-32 object-cover rounded" />
+                    )}
+                    {questionFormData.answer_type === 'video' && (
+                      <div className="space-y-2">
+                        <Label htmlFor="answer_media_duration">Duration (seconds)</Label>
+                        <Input
+                          id="answer_media_duration"
+                          type="number"
+                          min="1"
+                          max="300"
+                          value={questionFormData.answer_media_duration}
+                          onChange={(e) => setQuestionFormData({ ...questionFormData, answer_media_duration: parseInt(e.target.value) })}
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+                <div className="flex justify-end space-x-2 pt-4 border-t bg-white sticky bottom-0">
+                  <Button type="button" variant="outline" onClick={() => setIsQuestionDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button type="submit" className="bg-green-600 hover:bg-green-700">
+                    Add Question
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+
+          {/* Add Category Dialog */}
           <Dialog open={isDialogOpen} onOpenChange={(open) => {
             setIsDialogOpen(open)
             if (!open) {

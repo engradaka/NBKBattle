@@ -6,9 +6,105 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { ArrowLeft, Activity, Plus, Edit, Trash2, User, Calendar, Filter } from "lucide-react"
+import { ArrowLeft, Activity, Plus, Edit, Trash2, User, Calendar, Filter, LogIn } from "lucide-react"
 import { supabase } from "@/lib/supabase"
 import { checkAdminRole, getActivityLogs, type ActivityLog } from "@/lib/admin-utils"
+
+// Login Logs Component
+function LoginLogsSection() {
+  const [loginLogs, setLoginLogs] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchLoginLogs()
+  }, [])
+
+  const fetchLoginLogs = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('login_logs')
+        .select('*')
+        .order('login_time', { ascending: false })
+        .limit(10)
+
+      if (error) throw error
+      setLoginLogs(data || [])
+    } catch (error) {
+      console.error('Error fetching login logs:', error)
+      // If table doesn't exist, show empty state
+      setLoginLogs([])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (loading) {
+    return <div className="text-center py-4">Loading login logs...</div>
+  }
+
+  if (loginLogs.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <LogIn className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+        <p className="text-gray-600">No login logs found</p>
+      </div>
+    )
+  }
+
+  const formatDuration = (minutes: number) => {
+    if (minutes < 60) {
+      return `${minutes}m`
+    }
+    const hours = Math.floor(minutes / 60)
+    const remainingMinutes = minutes % 60
+    return `${hours}h ${remainingMinutes}m`
+  }
+
+  return (
+    <div className="space-y-3">
+      {loginLogs.map((log) => (
+        <div key={log.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
+          <div className="flex items-center gap-3">
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+              log.logout_time ? 'bg-blue-100' : 'bg-green-100'
+            }`}>
+              <LogIn className={`w-4 h-4 ${
+                log.logout_time ? 'text-blue-600' : 'text-green-600'
+              }`} />
+            </div>
+            <div>
+              <p className="font-medium text-gray-900">{log.admin_email}</p>
+              <p className="text-sm text-gray-500">
+                Logged in • {new Date(log.login_time).toLocaleDateString()} at {new Date(log.login_time).toLocaleTimeString()}
+              </p>
+              {log.logout_time && (
+                <p className="text-xs text-gray-400">
+                  Logged out • {new Date(log.logout_time).toLocaleDateString()} at {new Date(log.logout_time).toLocaleTimeString()}
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="text-right">
+            {log.logout_time ? (
+              <div className="space-y-1">
+                <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded-full block">
+                  Session: {formatDuration(log.session_duration || 0)}
+                </span>
+                <span className="text-xs text-gray-500">
+                  Completed
+                </span>
+              </div>
+            ) : (
+              <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded-full">
+                🟢 Active
+              </span>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
 
 export default function ActivityLogsPage() {
   const [user, setUser] = useState<any>(null)
@@ -235,6 +331,19 @@ export default function ActivityLogsPage() {
                 </Select>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Login Logs */}
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <User className="w-5 h-5 mr-2" />
+              Recent Admin Logins
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <LoginLogsSection />
           </CardContent>
         </Card>
 

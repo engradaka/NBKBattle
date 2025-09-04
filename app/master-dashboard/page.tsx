@@ -18,7 +18,11 @@ import {
   Trophy,
   Shield,
   UserCheck,
-  Clock
+  Clock,
+  Upload,
+  BarChart3,
+  Download,
+  Plus
 } from "lucide-react"
 
 export default function MasterDashboardPage() {
@@ -115,7 +119,39 @@ export default function MasterDashboardPage() {
   }
 
   const handleLogout = async () => {
-    await supabase.auth.signOut()
+    // Update logout time and calculate session duration
+    if (user?.email) {
+      try {
+        // Get the most recent login for this user
+        const { data: recentLogin } = await supabase
+          .from('login_logs')
+          .select('id, login_time')
+          .eq('admin_email', user.email)
+          .is('logout_time', null)
+          .order('login_time', { ascending: false })
+          .limit(1)
+          .single()
+
+        if (recentLogin) {
+          const logoutTime = new Date()
+          const loginTime = new Date(recentLogin.login_time)
+          const durationMinutes = Math.round((logoutTime.getTime() - loginTime.getTime()) / (1000 * 60))
+
+          await supabase
+            .from('login_logs')
+            .update({
+              logout_time: logoutTime.toISOString(),
+              session_duration: durationMinutes
+            })
+            .eq('id', recentLogin.id)
+        }
+      } catch (error) {
+        console.log('Logout logging failed:', error)
+      }
+    }
+
+    localStorage.clear()
+    setUser(null)
     router.push("/")
   }
 
@@ -305,6 +341,66 @@ export default function MasterDashboardPage() {
               <p className="text-gray-600 mb-4">Monitor all admin actions and changes</p>
               <Badge variant="outline" className="text-indigo-600 border-indigo-300">
                 {stats.recentActivities} this week
+              </Badge>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push('/bulk-import')}>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Upload className="w-5 h-5 mr-2 text-green-600" />
+                Bulk Import
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-600 mb-4">Upload multiple questions from CSV/Excel</p>
+              <Badge variant="outline" className="text-green-600 border-green-300">
+                Fast upload
+              </Badge>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push('/game-analytics')}>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <BarChart3 className="w-5 h-5 mr-2 text-orange-600" />
+                Game Analytics
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-600 mb-4">View quiz performance and statistics</p>
+              <Badge variant="outline" className="text-orange-600 border-orange-300">
+                Insights
+              </Badge>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push('/backup-export')}>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Download className="w-5 h-5 mr-2 text-teal-600" />
+                Backup & Export
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-600 mb-4">Export and backup all your data</p>
+              <Badge variant="outline" className="text-teal-600 border-teal-300">
+                Secure
+              </Badge>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer" onClick={() => router.push('/quick-add')}>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Plus className="w-5 h-5 mr-2 text-green-600" />
+                Quick Add
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-600 mb-4">Quickly add questions to any category</p>
+              <Badge variant="outline" className="text-green-600 border-green-300">
+                Fast entry
               </Badge>
             </CardContent>
           </Card>

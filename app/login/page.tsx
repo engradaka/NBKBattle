@@ -19,6 +19,9 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
+  const [showResetPassword, setShowResetPassword] = useState(false)
+  const [resetEmail, setResetEmail] = useState("")
+  const [resetLoading, setResetLoading] = useState(false)
   const router = useRouter()
   const { language, t } = useLanguage()
 
@@ -36,6 +39,19 @@ export default function LoginPage() {
       if (error) {
         setError(error.message)
       } else {
+        // Log successful login
+        try {
+          await supabase
+            .from('login_logs')
+            .insert([{
+              admin_email: email,
+              login_time: new Date().toISOString(),
+              user_agent: navigator.userAgent
+            }])
+        } catch (loginLogError) {
+          console.log('Login logging failed:', loginLogError)
+        }
+        
         // Route based on email
         if (email === 'engradaka@gmail.com') {
           router.push("/master-dashboard")
@@ -53,6 +69,31 @@ export default function LoginPage() {
 
   const handleBack = () => {
     router.push("/")
+  }
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setResetLoading(true)
+    setError("")
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: `${window.location.origin}/reset-password`
+      })
+
+      if (error) {
+        setError(error.message)
+      } else {
+        alert('✅ Password reset email sent! Check your inbox and follow the instructions.')
+        setShowResetPassword(false)
+        setResetEmail('')
+      }
+    } catch (err) {
+      console.error('Reset password error:', err)
+      setError('Network error. Please try again.')
+    }
+
+    setResetLoading(false)
   }
 
 
@@ -141,11 +182,75 @@ export default function LoginPage() {
                   </Button>
                 </form>
 
+                {/* Reset Password Link */}
+                <div className="mt-4 text-center">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => setShowResetPassword(true)}
+                    className="text-sm text-blue-600 hover:text-blue-700 hover:bg-transparent"
+                  >
+                    Forgot your password?
+                  </Button>
+                </div>
 
               </CardContent>
             </Card>
 
+            {/* Reset Password Modal */}
+            {showResetPassword && (
+              <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+                <Card className="w-full max-w-md bg-white rounded-2xl">
+                  <CardHeader className="text-center py-6">
+                    <h2 className="text-xl font-bold text-gray-900">Reset Password</h2>
+                    <p className="text-gray-600 text-sm">Enter your email to receive reset instructions</p>
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    <form onSubmit={handleResetPassword} className="space-y-4">
+                      {error && (
+                        <Alert variant="destructive" className="rounded-xl">
+                          <AlertDescription className="text-sm">{error}</AlertDescription>
+                        </Alert>
+                      )}
 
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-900">Email Address</label>
+                        <Input
+                          type="email"
+                          value={resetEmail}
+                          onChange={(e) => setResetEmail(e.target.value)}
+                          placeholder="Enter your email address"
+                          className="h-10"
+                          required
+                        />
+                      </div>
+
+                      <div className="flex gap-3 pt-4">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            setShowResetPassword(false)
+                            setResetEmail('')
+                            setError('')
+                          }}
+                          className="flex-1"
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          type="submit"
+                          disabled={resetLoading}
+                          className="flex-1 bg-blue-600 hover:bg-blue-700"
+                        >
+                          {resetLoading ? 'Sending...' : 'Send Reset Email'}
+                        </Button>
+                      </div>
+                    </form>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
           </div>
         </main>
       </SidebarProvider>
