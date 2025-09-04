@@ -569,10 +569,10 @@ export default function GamePage() {
                   <span className="text-lg font-bold text-blue-800">
                     {language === 'ar' ? (
                       <>
-                        <span dir="ltr">{gameState[`team${nextQuestionTurn}Name`]}</span> :السؤال التالي: دور فريق
+                        <span dir="ltr">{gameState[`team${nextQuestionTurn}Name`]}</span> :دور فريق
                       </>
                     ) : (
-                      <>Next Question: {gameState[`team${nextQuestionTurn}Name`]}'s Turn</>
+                      <>Turn: {gameState[`team${nextQuestionTurn}Name`]}</>
                     )}
                   </span>
                 </div>
